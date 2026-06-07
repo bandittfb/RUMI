@@ -15,32 +15,36 @@ RUMI is structured as a small pipeline: three independent **field engines** feed
 
 | Path | Role |
 |------|------|
-| `src/fields/correction.ts` | **C(x)** — Rectifier Seed core. Aggregates correction events into pressure, weighting recurrence (`log1p` of count) by directional coherence. |
-| `src/fields/capacity.ts` | **K(x)** — lightweight static scan of the target repo for each capability's declared signals. Rewards breadth (distinct signals) × spread (`log1p` of files). |
-| `src/fields/utilization.ts` | **U(x)** — aggregates optional usage telemetry. Missing usage = 0 (a stronger collapse candidate), not "unknown". |
-| `src/core/collapse.ts` | Normalizes the three fields to `[0,1]` and computes `CP = C · K · (1 − U)`, plus a human interpretation per reading. |
-| `src/core/normalize.ts` | Shared numeric helpers (max-normalization, clamp, round). |
+| `src/fields/correction.ts` | **C(x)** — Rectifier Seed core. Aggregates correction events into pressure (count + directional coherence), and tracks whether direction was tagged at all. |
+| `src/fields/capacity.ts` | **K(x)** — walks the repo and, per file, extracts real code identifiers via a language-aware analyzer, then matches each capability's signals against them. |
+| `src/fields/capacity-analyzers.ts` | Pluggable capacity analyzers + registry: a TypeScript-compiler analyzer for JS/TS, a comment/string-stripping text analyzer as the fallback for every other language. Adding a language = one analyzer + one registry line. |
+| `src/fields/utilization.ts` | **U(x)** — aggregates usage telemetry and tracks which capabilities were *observed*. Absent telemetry is **unknown**, not a confident zero. |
+| `src/fields/propose.ts` | **Capability auto-proposal** — clusters corrections by lexical overlap (single-linkage union-find) and derives capacity signals from recurring tokens. The divining rod's engine. |
+| `src/core/collapse.ts` | Scores each field on a fixed, scan-independent scale, computes `CP = C · K · (1 − U)` and a per-reading **confidence**, plus a human interpretation. |
+| `src/core/normalize.ts` | Shared numeric helpers: `saturate` (scan-independent scoring), clamp, round. |
 | `src/core/load.ts` | Loads `capabilities`, `corrections`, `usage` from a data dir. |
-| `src/commands/*` | `scan`, `dashboard`, `experiment` (baseline/compare). |
-| `src/index.ts` | Zero-dependency arg parser + command dispatch. |
+| `src/commands/*` | `scan`, `discover`, `dashboard`, `experiment` (baseline/compare). |
+| `src/index.ts` | Dependency-free arg parser + command dispatch. |
 
 ## Design choices
 
-**Capability as the coordinate.** All three fields are measured over the same index of capabilities. This is what makes the fields comparable and the intersection meaningful. Capabilities are declared in `capabilities.json` today; a future analyzer can propose them automatically from correction clusters.
+**Capability as the coordinate.** All three fields are measured over the same index of capabilities. This is what makes the fields comparable and the intersection meaningful. Capabilities can be declared in `capabilities.json` (`scan`) or proposed by the instrument itself from correction clusters (`discover`).
 
-**Max-normalization per scan.** Each field is normalized against its own maximum within a single scan, keeping `C`, `K`, `U` on a shared `[0,1]` scale so `CP` is interpretable as "relative to the strongest signal seen here." Cross-scan comparison is handled separately by `experiment compare` against a stored baseline.
+**Scan-independent scoring.** Each field maps its evidence into `[0,1]` with a saturating function against a *fixed* scale (`saturate(v, half) = 1 − e^(−v/half)`), never against the per-scan maximum. A capability's `CP` therefore depends only on its own evidence — not on which other capabilities share the scan — so readings are comparable across scans, `experiment compare` is a valid before/after test, and auto-proposed capabilities don't re-rank their neighbours just by appearing.
+
+**Confidence alongside magnitude.** Every reading carries a `confidence` (product of per-field confidences). `CP` says how strong the collapse signal is; confidence says how much to trust it. Unknown utilization, thin correction samples, or partial signal coverage lower confidence rather than silently inflating `CP`. Absent telemetry is *unknown*, never "confirmed unused".
 
 **Multiplicative gate.** `CP` is a product, not a sum, on purpose. A latent affordance requires *all three* conditions simultaneously; an additive score would let a single loud field manufacture a false candidate.
 
-**Local-first, zero runtime deps.** The only dependencies are dev-time (`typescript`, `@types/node`). The instrument runs entirely on the user's machine — source code, correction logs, and usage traces never leave it. This is a trust requirement, not just a convenience.
+**Local-first.** The instrument runs entirely on the user's machine — source code, correction logs, and usage traces never leave it. This is a trust requirement, not just a convenience. The one runtime dependency is the local `typescript` compiler, used to parse JS/TS for capacity; it performs no network access.
 
 ## Roadmap
 
-The current capacity scan is deliberately a seam. Planned depth, roughly in order:
+Capacity and proposal are deliberately seams. Status and planned depth, roughly in order:
 
-1. **AST / code-graph capacity** — replace keyword presence with symbol- and import-graph analysis, and estimate *integration distance* (how far apart the pieces are) as a secondary observable.
+1. **Code-aware capacity** — *done for JS/TS*: real identifier extraction via the TypeScript compiler, with a comment/string/keyword-aware text analyzer as the fallback for other languages (`capacity-analyzers.ts`). Next: per-language analyzers (tree-sitter) registered in the same registry; symbol- and import-graph analysis; *integration distance* (how far apart the pieces are) as a secondary observable; declaration-vs-use weighting.
 2. **Correction-capture SDK** — a normalized correction schema with a redaction layer, so `corrections.json` is produced from real `before → after` events (incl. agent-session exports) rather than hand-authored.
-3. **Candidate auto-proposal** — cluster correction vectors to propose capabilities instead of requiring them to be declared.
+3. **Candidate auto-proposal** — *prototyped* (`discover`, `propose.ts`): lexical clustering of corrections into proposed capabilities. Next depth: local-embedding similarity instead of lexical overlap, and joining proposals to the code graph.
 4. **IDE / workbench panel** — surface candidates linked to actual files inside VS Code or a Codex-style workspace ("architectural microscope").
 5. **Sidecar mode** — optional self-hosted collector for team telemetry, CI gate on Collapse Potential regressions.
 6. **Level-2 / Level-3 analysis** — treat RUMI's own discovery as a computation with its own displacement field (recursive manifold analysis), per the Displacement Code Challenge's final frontier.

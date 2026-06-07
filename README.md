@@ -125,6 +125,6 @@ Plus a target repo, scanned locally for capacity signals. **Nothing is uploaded.
 
 ## Status
 
-`0.2.0` — working instrument: three-field engine, scan-independent Collapse Potential with per-reading **confidence** (unknown utilization is never mistaken for confirmed-unused), CLI, local dashboard, baseline/compare, and **emergent capability discovery** (`discover`) — the instrument can now propose undeclared capabilities from the correction field alone.
+`0.3.0` — working instrument: three-field engine, scan-independent Collapse Potential with per-reading **confidence** (unknown utilization is never mistaken for confirmed-unused), **code-aware capacity** (JS/TS parsed with the TypeScript compiler; a comment/string/keyword-aware analyzer for every other language, so a signal in a comment never counts as code), CLI, local dashboard, baseline/compare, and **emergent capability discovery** (`discover`) — the instrument can propose undeclared capabilities from the correction field alone.
 
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the design and roadmap. Next depth: AST-based capacity (so a signal in a comment or string no longer counts as code), local-embedding clustering for `discover`, correction-capture SDK, VS Code panel, recursive / Level-3 analysis.
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the design and roadmap. Next depth: per-language (tree-sitter) capacity analyzers, integration-distance as a secondary observable, local-embedding clustering for `discover`, correction-capture SDK, VS Code panel, recursive / Level-3 analysis.

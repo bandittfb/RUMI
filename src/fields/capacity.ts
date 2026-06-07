@@ -1,17 +1,23 @@
 /**
  * K(x): the capacity field.
  *
- * What does the codebase already structurally support? RUMI scans the target
- * repository for the signals declared on each capability (symbols, module
- * names, field names). A capability whose pieces already exist across several
- * files has high latent capacity even if no workflow composes them yet.
- *
- * This is a deliberately lightweight static scan (keyword/symbol presence).
- * It is the seam where a deeper AST/code-graph analyzer plugs in later.
+ * What does the codebase already structurally support? RUMI walks the target
+ * repository and, per file, extracts the real code identifiers using a
+ * language-aware analyzer (see `capacity-analyzers.ts`): the TypeScript compiler
+ * for JS/TS, a comment/string-stripping text analyzer for every other language.
+ * A capability whose declared (or auto-proposed) signals appear as genuine code
+ * across several files has high latent capacity even if no workflow composes
+ * them yet — while words in comments, string literals, or language keywords no
+ * longer manufacture phantom capacity.
  */
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import type { CapabilityDef, CapacityEvidence } from "../core/types.js";
+import {
+  analyzerForExtension,
+  signalMatches,
+  type CodeTokens
+} from "./capacity-analyzers.js";
 
 const CODE_EXTENSIONS = new Set([
   ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs",
@@ -45,10 +51,15 @@ export async function scanCapacity(
   capabilities: CapabilityDef[]
 ): Promise<Record<string, CapacityEvidence>> {
   const files = await walk(repoRoot);
-  const contents = new Map<string, string>();
-  for (const f of files) {
+
+  // Analyze each file once into its real code tokens, with the analyzer chosen
+  // by language. This is the seam where a deeper per-language analyzer plugs in.
+  const tokensByFile = new Map<string, CodeTokens>();
+  for (const file of files) {
     try {
-      contents.set(f, (await fs.readFile(f, "utf8")).toLowerCase());
+      const text = await fs.readFile(file, "utf8");
+      const analyzer = analyzerForExtension(path.extname(file));
+      tokensByFile.set(path.relative(repoRoot, file), analyzer.analyze(text, file));
     } catch {
       /* skip unreadable */
     }
@@ -60,13 +71,11 @@ export async function scanCapacity(
     const matchedFiles = new Set<string>();
     let hits = 0;
     for (const signal of cap.signals) {
-      const needle = signal.toLowerCase();
-      for (const [file, text] of contents) {
-        const occurrences = countOccurrences(text, needle);
-        if (occurrences > 0) {
-          hits += occurrences;
+      for (const [file, tok] of tokensByFile) {
+        if (signalMatches(signal, tok)) {
+          hits++;
           matchedSignals.add(signal);
-          matchedFiles.add(path.relative(repoRoot, file));
+          matchedFiles.add(file);
         }
       }
     }
@@ -78,15 +87,4 @@ export async function scanCapacity(
     };
   }
   return out;
-}
-
-function countOccurrences(haystack: string, needle: string): number {
-  if (!needle) return 0;
-  let count = 0;
-  let idx = haystack.indexOf(needle);
-  while (idx !== -1) {
-    count++;
-    idx = haystack.indexOf(needle, idx + needle.length);
-  }
-  return count;
 }
