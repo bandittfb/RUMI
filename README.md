@@ -44,9 +44,14 @@ npm run scan
 # or directly:
 node dist/index.js scan --repo <path-to-repo> --data <path-to-data-dir>
 
-# explore the candidates in the browser
-npm run dashboard        # http://localhost:4317
+# explore everything in the browser observatory (Scan / Discover / Reflect)
+npm run dashboard        # http://localhost:4317  — computed live, fully local
 ```
+
+The observatory has three views: **Scan** (Level-1 candidates with the ripe/deep
+quadrant and confidence), **Discover** (emergent capabilities proposed from the
+correction field), and **Reflect** (the Level-2/3 recursion and its split fixed
+point). Everything is computed on the local machine — nothing is uploaded.
 
 ### What the example shows
 
@@ -223,7 +228,7 @@ Plus a target repo, scanned locally for capacity signals. **Nothing is uploaded.
 
 ## Status
 
-`0.9.0` — working instrument: three-field engine, scan-independent Collapse Potential with per-reading **confidence** (unknown utilization is never mistaken for confirmed-unused), **code-aware capacity across many languages** (JS/TS via the TypeScript compiler; Python, Go, Ruby, Java, Rust, PHP, C# via tree-sitter; a comment/string/keyword-aware text analyzer as the fallback — a signal in a comment never counts as code), **integration distance** (a second observable ranking candidates ripe vs. deep from the symbol reference graph, with the file import graph as fallback), **emergent capability discovery** (`discover`) with **distributional clustering** — proposing undeclared capabilities from the correction field alone, grouping demand that shares no surface words — and **recursive reflection** (`reflect`, `reflect --level 3`), RUMI turning its instrument on itself to tell robust discoveries from artifacts of its own tuning — and testing whether that judgement itself converges. Plus a CLI, local dashboard, and baseline/compare.
+`1.0.0` — working instrument: three-field engine, scan-independent Collapse Potential with per-reading **confidence** (unknown utilization is never mistaken for confirmed-unused), **code-aware capacity across many languages** (JS/TS via the TypeScript compiler; Python, Go, Ruby, Java, Rust, PHP, C# via tree-sitter; a comment/string/keyword-aware text analyzer as the fallback — a signal in a comment never counts as code), **integration distance** (a second observable ranking candidates ripe vs. deep from the symbol reference graph, with the file import graph as fallback), **emergent capability discovery** (`discover`) with **distributional clustering** — proposing undeclared capabilities from the correction field alone, grouping demand that shares no surface words — and **recursive reflection** (`reflect`, `reflect --level 3`), RUMI turning its instrument on itself to tell robust discoveries from artifacts of its own tuning — and testing whether that judgement itself converges. Plus a CLI, a three-view browser **observatory** (Scan / Discover / Reflect, computed live and fully local), and baseline/compare.
 
 All parsing is local: tree-sitter runs on prebuilt wasm grammars shipped on disk — nothing touches the network at run time.
 

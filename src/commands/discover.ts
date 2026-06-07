@@ -34,6 +34,7 @@ export interface DiscoverOptions {
   data: string;
   json?: boolean;
   top?: number;
+  quiet?: boolean;
 }
 
 export interface DiscoveryReport {
@@ -109,7 +110,9 @@ export async function runDiscover(opts: DiscoverOptions): Promise<DiscoveryRepor
     "utf8"
   );
 
-  if (opts.json) {
+  if (opts.quiet) {
+    // no output — caller consumes the returned report
+  } else if (opts.json) {
     process.stdout.write(JSON.stringify(report, null, 2) + "\n");
   } else {
     printDiscovery(report, opts.top ?? 10);

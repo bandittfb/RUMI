@@ -3,40 +3,63 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>RUMI — Latent Affordance Observatory</title>
+<title>RUMI — Uncollapsed Manifold Observatory</title>
 <style>
   :root {
-    --bg: #0e1116; --panel: #161b22; --line: #232a33;
-    --text: #e6edf3; --muted: #8b949e;
-    --c: #4cc9f0; --k: #b5e48c; --u: #f4978e; --cp: #ffd166;
+    --bg:#0e1116; --panel:#161b22; --panel2:#1b212b; --line:#232a33;
+    --text:#e6edf3; --muted:#8b949e;
+    --c:#4cc9f0; --k:#b5e48c; --u:#f4978e; --cp:#ffd166; --conf:#c792ea;
+    --ripe:#3fb950; --deep:#f85149; --mod:#d29922; --cool:#58a6ff;
   }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text);
-    font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-  header { padding: 22px 28px; border-bottom: 1px solid var(--line); }
-  h1 { margin: 0; font-size: 18px; letter-spacing: .04em; }
-  .sub { color: var(--muted); margin-top: 4px; font-size: 12px; }
-  main { padding: 20px 28px; max-width: 1000px; }
-  .card { background: var(--panel); border: 1px solid var(--line);
-    border-radius: 10px; padding: 16px 18px; margin-bottom: 14px; }
-  .card h2 { margin: 0 0 2px; font-size: 15px; }
-  .cap { color: var(--muted); font-size: 12px; }
-  .row { display: grid; grid-template-columns: 140px 1fr 130px; align-items: center;
-    gap: 10px; margin: 7px 0; }
-  .label { color: var(--muted); font-size: 12px; }
-  .track { background: #0b0e13; border-radius: 6px; height: 14px; overflow: hidden;
-    border: 1px solid var(--line); }
-  .fill { height: 100%; }
-  .fill.c { background: var(--c); } .fill.k { background: var(--k); }
-  .fill.u { background: var(--u); } .fill.cp { background: var(--cp); }
-  .num { text-align: right; color: var(--text); font-size: 12px; }
-  .meta { color: var(--muted); font-size: 11px; }
-  .interp { margin-top: 10px; padding: 8px 10px; border-left: 3px solid var(--cp);
-    background: #1b212b; border-radius: 4px; font-size: 12px; }
-  details { margin-top: 8px; } summary { cursor: pointer; color: var(--muted); font-size: 12px; }
-  .files { margin: 6px 0 0; padding-left: 16px; color: var(--muted); font-size: 11px; }
-  .empty { color: var(--muted); }
-  .rank { color: var(--cp); font-weight: bold; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text);
+    font:14px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+  header { padding:20px 28px; border-bottom:1px solid var(--line); }
+  h1 { margin:0; font-size:17px; letter-spacing:.04em; }
+  .sub { color:var(--muted); margin-top:4px; font-size:12px; }
+  nav { display:flex; gap:6px; padding:12px 28px 0; border-bottom:1px solid var(--line); }
+  nav button { background:none; border:0; color:var(--muted); font:inherit; cursor:pointer;
+    padding:8px 14px; border-bottom:2px solid transparent; }
+  nav button.active { color:var(--text); border-bottom-color:var(--cp); }
+  main { padding:20px 28px; max-width:1040px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    padding:16px 18px; margin-bottom:14px; }
+  .card h2 { margin:0 0 2px; font-size:15px; }
+  .cap { color:var(--muted); font-size:12px; font-weight:normal; }
+  .rank { color:var(--cp); font-weight:bold; }
+  .row { display:grid; grid-template-columns:128px 1fr 150px; align-items:center; gap:10px; margin:6px 0; }
+  .label { color:var(--muted); font-size:12px; }
+  .track { background:#0b0e13; border-radius:6px; height:13px; overflow:hidden; border:1px solid var(--line); }
+  .fill { height:100%; }
+  .fill.c{background:var(--c)} .fill.k{background:var(--k)} .fill.u{background:var(--u)}
+  .fill.cp{background:var(--cp)} .fill.conf{background:var(--conf)}
+  .num { text-align:right; color:var(--text); font-size:12px; }
+  .interp { margin-top:10px; padding:8px 10px; border-left:3px solid var(--cp);
+    background:var(--panel2); border-radius:4px; font-size:12px; }
+  .badge { display:inline-block; padding:1px 8px; border-radius:20px; font-size:11px; font-weight:bold; }
+  .badge.ripe{background:rgba(63,185,80,.16); color:var(--ripe); border:1px solid var(--ripe)}
+  .badge.deep{background:rgba(248,81,73,.14); color:var(--deep); border:1px solid var(--deep)}
+  .badge.mod{background:rgba(210,153,34,.14); color:var(--mod); border:1px solid var(--mod)}
+  .badge.cool{background:rgba(88,166,255,.14); color:var(--cool); border:1px solid var(--cool)}
+  .badge.warn{background:rgba(244,151,142,.14); color:var(--u); border:1px solid var(--u)}
+  .pill-row { margin:6px 0 2px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  details { margin-top:8px; } summary { cursor:pointer; color:var(--muted); font-size:12px; }
+  .files { margin:6px 0 0; padding-left:16px; color:var(--muted); font-size:11px; }
+  .sig { color:var(--k); }
+  .empty,.loading { color:var(--muted); padding:8px 0; }
+  .note { color:var(--muted); font-size:12px; margin:0 0 14px; }
+  .headline { background:var(--panel2); border:1px solid var(--line); border-left:3px solid var(--conf);
+    border-radius:8px; padding:14px 16px; margin-bottom:16px; font-size:13px; }
+  .headline b { color:var(--text); }
+  .conv { color:var(--ripe); } .div { color:var(--deep); }
+  /* scatter */
+  .quad { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 18px 6px; margin-bottom:16px; }
+  .quad h3 { margin:0 0 8px; font-size:13px; color:var(--muted); font-weight:normal; }
+  svg text { fill:var(--muted); font-size:10px; }
+  .axislabel { fill:var(--muted); font-size:11px; }
+  .rangebar { position:relative; background:#0b0e13; border:1px solid var(--line); border-radius:6px; height:16px; }
+  .rangebar .span { position:absolute; top:0; bottom:0; background:rgba(199,146,234,.35); }
+  .rangebar .l2 { position:absolute; top:-2px; bottom:-2px; width:2px; background:var(--cp); }
 </style>
 </head>
 <body>
@@ -44,49 +67,152 @@
   <h1>RUMI · Revealed Uncollapsed Manifold Instrument</h1>
   <div class="sub" id="sub">loading…</div>
 </header>
-<main id="app"></main>
+<nav>
+  <button data-tab="scan" class="active">Scan · Level&#8209;1</button>
+  <button data-tab="discover">Discover · the divining rod</button>
+  <button data-tab="reflect">Reflect · Level&#8209;2/3</button>
+</nav>
+<main id="app"><div class="loading">loading…</div></main>
+
 <script>
-function bar(cls, v) {
-  return `<div class="track"><div class="fill ${cls}" style="width:${Math.round(v*100)}%"></div></div>`;
-}
-function row(label, cls, v, meta) {
+const pct = x => Math.round(x*100)+'%';
+const f3 = x => (x==null?'—':x.toFixed(3));
+
+function bar(cls,v){ return `<div class="track"><div class="fill ${cls}" style="width:${Math.round((v||0)*100)}%"></div></div>`; }
+function row(label,cls,v,meta){
   return `<div class="row"><span class="label">${label}</span>${bar(cls,v)}`
-    + `<span class="num">${v.toFixed(3)}${meta?` · ${meta}`:""}</span></div>`;
+    +`<span class="num">${f3(v)}${meta?` · ${meta}`:''}</span></div>`;
 }
-async function load() {
-  const app = document.getElementById('app');
-  const sub = document.getElementById('sub');
-  let report;
-  try { report = await (await fetch('/api/report')).json(); }
-  catch { sub.textContent = 'No report available.'; return; }
-  if (report.error) { sub.textContent = report.error; return; }
-  sub.textContent = `repo ${report.repo} · ${report.capabilityCount} capabilities · generated ${new Date(report.generatedAt).toLocaleString()}`;
-  app.innerHTML = report.readings.map((r, i) => {
-    const e = r.evidence;
-    const files = e.capacityFiles.length
-      ? `<ul class="files">${e.capacityFiles.map(f=>`<li>${f}</li>`).join('')}</ul>`
-      : `<div class="empty">no capacity files matched</div>`;
-    return `<div class="card">
-      <h2><span class="rank">#${i+1}</span> ${r.label} <span class="cap">[${r.capability}]</span></h2>
-      ${row('Collapse Potential','cp',r.collapsePotential,'')}
-      ${row('C correction','c',r.correction, e.correctionCount+' ev, coh '+e.directionCoherence)}
-      ${row('K capacity','k',r.capacity, e.matchedSignals.length+' sig, '+e.capacityFiles.length+' files')}
-      ${row('U utilization','u',r.utilization, e.usageCount+' uses')}
-      <div class="interp">${interpret(r)}</div>
-      <details><summary>capacity evidence</summary>${files}
-        <div class="meta">signals: ${e.matchedSignals.join(', ')||'—'}</div></details>
-    </div>`;
-  }).join('');
+function dBadge(d){
+  if(d==null) return '';
+  if(d<=0.1) return `<span class="badge cool">co-located · D ${f3(d)}</span>`;
+  if(d<=0.45) return `<span class="badge ripe">RIPE · D ${f3(d)}</span>`;
+  if(d<0.75) return `<span class="badge mod">MODERATE · D ${f3(d)}</span>`;
+  return `<span class="badge deep">DEEP · D ${f3(d)}</span>`;
 }
 function interpret(r){
   const hi=x=>x>=0.6, lo=x=>x<=0.34;
+  if(hi(r.correction)&&hi(r.capacity)&&!r.utilizationKnown) return "Candidate uncollapsed feature — utilization unknown: confirm it isn't already in use.";
   if(hi(r.correction)&&hi(r.capacity)&&lo(r.utilization)) return "Uncollapsed feature: strong correction pressure meets latent capacity that is barely used.";
   if(hi(r.correction)&&lo(r.capacity)) return "Unsupported wish: users push toward this, but the code does not yet support it.";
   if(hi(r.capacity)&&lo(r.correction)&&lo(r.utilization)) return "Dormant capacity: the code supports it, but nobody is asking for it.";
   if(hi(r.utilization)) return "Already collapsed: this capability is realized and in active use.";
   return "Low signal: no strong collapse pressure in this region.";
 }
-load();
+function readingCard(r,i,extra){
+  const e=r.evidence;
+  const uses = r.utilizationKnown ? (e.usageCount+' uses') : 'usage unknown';
+  const warn = r.utilizationKnown ? '' : ` <span class="badge warn">⚠ usage unverified</span>`;
+  const files = e.capacityFiles.length
+    ? `<ul class="files">${e.capacityFiles.map(x=>`<li>${x}</li>`).join('')}</ul>`
+    : `<div class="empty">no capacity files matched</div>`;
+  return `<div class="card">
+    <h2><span class="rank">#${i+1}</span> ${r.label} <span class="cap">[${r.capability}]</span></h2>
+    ${extra||''}
+    <div class="pill-row">${dBadge(r.integrationDistance)}${warn}</div>
+    ${row('Collapse Potential','cp',r.collapsePotential)}
+    ${row('confidence','conf',r.confidence)}
+    ${row('C correction','c',r.correction, e.correctionCount+' ev, coh '+e.directionCoherence)}
+    ${row('K capacity','k',r.capacity, e.matchedSignals.length+' sig, '+e.capacityFiles.length+' files')}
+    ${row('U utilization','u',r.utilization, uses)}
+    <div class="interp">${interpret(r)}</div>
+    <details><summary>capacity evidence</summary>${files}
+      <div class="files">signals: ${e.matchedSignals.join(', ')||'—'}</div></details>
+  </div>`;
+}
+
+function quadrant(readings){
+  const pts = readings.filter(r=>r.integrationDistance!=null && r.collapsePotential>0.001);
+  const W=520,H=240,P=34;
+  const x=d=>P+d*(W-2*P), y=cp=>H-P-cp*(H-2*P);
+  const dots = pts.map(r=>{
+    const col = r.integrationDistance<=0.45?'var(--ripe)':r.integrationDistance>=0.75?'var(--deep)':'var(--mod)';
+    return `<circle cx="${x(r.integrationDistance).toFixed(1)}" cy="${y(r.collapsePotential).toFixed(1)}" r="5" fill="${col}"/>`
+      +`<text x="${(x(r.integrationDistance)+8).toFixed(1)}" y="${(y(r.collapsePotential)+3).toFixed(1)}">${r.label}</text>`;
+  }).join('');
+  return `<div class="quad"><h3>Collapse Potential × Integration distance — ripe (build now) vs deep (real work)</h3>
+    <svg viewBox="0 0 ${W} ${H}" width="100%">
+      <line x1="${P}" y1="${H-P}" x2="${W-P}" y2="${H-P}" stroke="var(--line)"/>
+      <line x1="${P}" y1="${P}" x2="${P}" y2="${H-P}" stroke="var(--line)"/>
+      <line x1="${(P+(W-2*P)*0.45).toFixed(0)}" y1="${P}" x2="${(P+(W-2*P)*0.45).toFixed(0)}" y2="${H-P}" stroke="var(--line)" stroke-dasharray="3 3"/>
+      <text class="axislabel" x="${P}" y="${P-10}">high CP</text>
+      <text class="axislabel" x="${P+6}" y="${P+12}" fill="var(--ripe)">RIPE (build now)</text>
+      <text class="axislabel" x="${W-P-60}" y="${P+12}" fill="var(--deep)">DEEP ▶</text>
+      <text class="axislabel" x="${P}" y="${H-8}">connected</text>
+      <text class="axislabel" x="${W-P-60}" y="${H-8}">scattered</text>
+      ${dots}
+    </svg></div>`;
+}
+
+async function getJSON(u){ const r=await fetch(u); return r.json(); }
+
+const views = {
+  async scan(app){
+    const rep = await getJSON('/api/scan');
+    if(rep.error){ app.innerHTML=`<div class="empty">${rep.error}</div>`; return; }
+    setSub(`repo ${rep.repo} · ${rep.capabilityCount} capabilities · ${new Date(rep.generatedAt).toLocaleString()}`);
+    app.innerHTML = `<p class="note">Collapse Potential = C · K · (1 − U), over declared capabilities. Each reading carries confidence and an integration-distance verdict.</p>`
+      + quadrant(rep.readings)
+      + rep.readings.map((r,i)=>readingCard(r,i)).join('');
+  },
+  async discover(app){
+    const rep = await getJSON('/api/discover');
+    if(rep.error){ app.innerHTML=`<div class="empty">${rep.error}</div>`; return; }
+    app.innerHTML = `<p class="note">No <code>capabilities.json</code> — ${rep.proposedCount} capabilities proposed from ${rep.correctionCount} corrections by distributional clustering. Emergent candidates have no usage record, so each is a lead to verify.</p>`
+      + rep.readings.map((r,i)=>{
+          const sig = `<div class="pill-row"><span class="label">proposed signals:</span> <span class="sig">${(r.signals||[]).join(', ')}</span></div>`;
+          return readingCard(r,i,sig);
+        }).join('');
+  },
+  async reflect(app){
+    app.innerHTML = `<div class="loading">running 729-configuration self-sweep + Level-3 designs…</div>`;
+    const rep = await getJSON('/api/reflect');
+    if(rep.error){ app.innerHTML=`<div class="empty">${rep.error}</div>`; return; }
+    const top3 = rep.level3.rows[0];
+    const rankFixed = top3 && top3.rank1Min>=0.99;
+    const head = top3 ? `<div class="headline">
+      <b>Level-3 — does the recursion converge?</b> A <b>split fixed point</b> for the top discovery [${top3.capability}]:<br>
+      RANKING <span class="${rankFixed?'conv':'div'}">${rankFixed?'CONVERGES':'does not converge'}</span> — RUMI's #1 pick in ${rankFixed?'100%':'≥'+pct(top3.rank1Min)} of every reflection design.<br>
+      CLASSIFICATION <span class="${top3.classConverges?'conv':'div'}">${top3.classConverges?'CONVERGES':'does NOT converge'}</span> — its 'feature' label spans ${pct(top3.min)}–${pct(top3.max)} (Level-2 reported ${pct(top3.l2Share)}).<br>
+      <span class="cap">The trustworthy invariant is the ranking; the single stability % is partly an artifact of how RUMI reflects. Level-4 would add nothing.</span>
+    </div>` : '';
+
+    const l3 = new Map(rep.level3.rows.map(r=>[r.capability,r]));
+    const cards = rep.level2.rows.filter(r=>r.baselineCP>=0.001 || r.candidateShare>0.05).map(r=>{
+      const k = r.mostSensitiveKnob;
+      const knob = (k && r.candidateShare>0.05 && r.candidateShare<0.95)
+        ? `<div class="pill-row"><span class="label">most sensitive to</span> <span class="badge mod">${k.knob}</span>
+            <span class="cap">feature ${pct(k.highShare)} at ${k.knob}=${(+k.highLevel).toFixed(2)} vs ${pct(k.lowShare)} at ${k.knob}=${(+k.lowLevel).toFixed(2)}</span></div>` : '';
+      const t = l3.get(r.capability);
+      const range = t ? `<div class="row"><span class="label">L3 stability</span>
+        <div class="rangebar"><div class="span" style="left:${(t.min*100)}%;width:${((t.max-t.min)*100)}%"></div><div class="l2" style="left:${(t.l2Share*100)}%"></div></div>
+        <span class="num">${pct(t.min)}–${pct(t.max)}</span></div>
+        <div class="pill-row"><span class="badge ${t.classConverges?'ripe':'deep'}">${t.classConverges?'CONVERGES':'DIVERGES'}</span><span class="cap">across reflection designs (marker = Level-2 estimate)</span></div>` : '';
+      return `<div class="card">
+        <h2>${r.label} <span class="cap">[${r.capability}] · baseline CP ${f3(r.baselineCP)} · ${r.baselineCategory}</span></h2>
+        ${row('stays rank #1','cp',r.rank1Share, pct(r.rank1Share))}
+        ${row('classed a feature','conf',r.candidateShare, pct(r.candidateShare))}
+        ${knob}
+        ${range}
+      </div>`;
+    }).join('');
+
+    app.innerHTML = `<p class="note">RUMI turned on itself: ${rep.level2.configurations} self-configurations swept (Level-2), across ${rep.level3.designs} reflection designs (Level-3). Robust discoveries survive RUMI displacing its own parameters; fragile ones are artifacts of tuning.</p>`
+      + head + cards;
+  }
+};
+
+function setSub(t){ document.getElementById('sub').textContent = t; }
+let loaded = {};
+async function show(tab){
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+  const app = document.getElementById('app');
+  if(!loaded[tab]){ app.innerHTML = `<div class="loading">computing…</div>`; }
+  try { await views[tab](app); loaded[tab]=true; }
+  catch(e){ app.innerHTML = `<div class="empty">error: ${e.message}</div>`; }
+}
+document.querySelectorAll('nav button').forEach(b=> b.addEventListener('click', ()=>show(b.dataset.tab)));
+show('scan');
 </script>
 </body>
 </html>

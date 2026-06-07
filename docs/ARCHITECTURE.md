@@ -28,7 +28,8 @@ RUMI is structured as a small pipeline: three independent **field engines** feed
 | `src/core/normalize.ts` | Shared numeric helpers: `saturate` (scan-independent scoring), clamp, round. |
 | `src/core/load.ts` | Loads `capabilities`, `corrections`, `usage` from a data dir. |
 | `src/commands/*` | `scan`, `discover`, `reflect`, `dashboard`, `experiment` (baseline/compare). |
-| `src/commands/reflect.ts` | **Level-2 reflection** — sweeps RUMI's own parameter manifold (config knobs × thresholds), re-scores, and reports collapse stability + the knob each discovery is most sensitive to. RUMI's instrument turned on itself. |
+| `src/commands/reflect.ts` | **Level-2/3 reflection** — sweeps RUMI's own parameter manifold (config knobs × thresholds), re-scores, reports collapse stability + sensitivity; `--level 3` sweeps the reflection's own design space for the convergence test. Exposes compute functions the observatory consumes. |
+| `src/commands/dashboard.ts` | Local **observatory** server — computes Scan / Discover / Reflect live and serves them as JSON to a three-view page. No upload. |
 | `src/index.ts` | Dependency-free arg parser + command dispatch. |
 
 ## Design choices

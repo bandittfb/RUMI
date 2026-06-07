@@ -97,7 +97,7 @@ async function main(): Promise<void> {
       });
       break;
     case "dashboard":
-      await runDashboard({ port: flags.port ? Number(flags.port) : 4317 });
+      await runDashboard({ port: flags.port ? Number(flags.port) : 4317, repo, data });
       break;
     case "experiment":
       if (sub === "baseline") await runBaseline({ repo, data });
