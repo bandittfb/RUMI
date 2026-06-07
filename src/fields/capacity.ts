@@ -27,7 +27,13 @@ const CODE_EXTENSIONS = new Set([
   ".py", ".go", ".rb", ".java", ".rs", ".php", ".cs"
 ]);
 
-const IGNORE_DIRS = new Set(["node_modules", ".git", "dist", "build", ".rumi"]);
+const IGNORE_DIRS = new Set([
+  "node_modules", ".git", "dist", "build", ".rumi",
+  // Python / general environments and caches — third-party code here would
+  // otherwise swamp the scan (a venv full of pandas/torch is not your capacity).
+  ".venv", "venv", "env", "__pycache__", ".pytest_cache", ".mypy_cache",
+  "site-packages", ".tox", "vendor", "target", ".next", "out", "coverage"
+]);
 
 /** List all scannable code files under a repo root (absolute-or-relative as given). */
 export async function listCodeFiles(repoRoot: string): Promise<string[]> {

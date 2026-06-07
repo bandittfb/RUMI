@@ -15,6 +15,7 @@
 import { runScan } from "./commands/scan.js";
 import { runDiscover } from "./commands/discover.js";
 import { runReflect } from "./commands/reflect.js";
+import { runMap } from "./commands/map.js";
 import { runDashboard } from "./commands/dashboard.js";
 import { runBaseline, runCompare } from "./commands/experiment.js";
 
@@ -49,6 +50,7 @@ RUMI — Revealed Uncollapsed Manifold Instrument
 Usage:
   rumi scan       --repo <dir> --data <dir> [--json] [--top N]
   rumi discover   --repo <dir> --data <dir> [--json] [--top N]
+  rumi map        --repo <dir> [--json] [--top N]   (code-only, no data needed)
   rumi reflect    --repo <dir> --data <dir> [--json] [--top N] [--level 2|3]
   rumi dashboard  [--port 4317]
   rumi experiment baseline --repo <dir> --data <dir>
@@ -86,6 +88,9 @@ async function main(): Promise<void> {
         json: Boolean(flags.json),
         top: flags.top ? Number(flags.top) : 10
       });
+      break;
+    case "map":
+      await runMap({ repo, json: Boolean(flags.json), top: flags.top ? Number(flags.top) : 8 });
       break;
     case "reflect":
       await runReflect({
