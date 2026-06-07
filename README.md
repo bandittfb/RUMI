@@ -221,14 +221,38 @@ already-proven-unstable quantity. Looking *was* the only way to know.
 RUMI reads a data directory containing:
 
 - `capabilities.json` — the coordinates: each capability's id, label, and the code `signals` that indicate capacity for it. Required for `scan`; **`discover` does not use it** (it proposes capabilities itself).
-- `corrections.json` — correction events (`before` → `after`) tagged by capability and direction.
+- `corrections.json` — intent-gap signals tagged by capability. A correction (`before` → `after`) is the gold standard, but each event may set a `kind` (see below) to admit other behaviour.
 - `usage.json` — optional telemetry: how much each capability is actually exercised.
 
 Plus a target repo, scanned locally for capacity signals. **Nothing is uploaded.** The instrument runs where the code lives.
 
+### Beyond corrections: arrows vs. heat
+
+A correction is just the cleanest evidence of the real thing — the gap between
+what people are trying to do and what the system lets them do. Lots of behaviour
+reveals that gap; the difference is whether it carries an **arrow** (it tells you
+which way to build) or only **heat** (it tells you there's friction, but not the
+destination). Each signal sets a `kind`:
+
+| kind | weight | carries an arrow? |
+|------|-------|-------------------|
+| `correction` | 1.0 | yes — the gold standard (`before` → `after`) |
+| `request` | 1.0 | yes — the ask names the destination |
+| `repetition` | 0.8 | yes — a repeated manual sequence implies the missing composite |
+| `workaround` | 0.6 | yes, if it names what was wanted |
+| `abandonment` | 0.5 | no — heat |
+| `retry` | 0.4 | no — heat |
+
+Heat raises **demand** (RUMI sees that something is wanted) but earns **no
+confidence** (it can't say *what*). So a feature with only abandonment signals
+shows real correction pressure yet near-zero confidence and a "direction
+uncertain" flag — honest about the difference between *"people struggle here"*
+and *"here's what to build."* Confidence is what keeps the loud-but-vague signals
+from masquerading as actionable ones.
+
 ## Status
 
-`1.0.0` — working instrument: three-field engine, scan-independent Collapse Potential with per-reading **confidence** (unknown utilization is never mistaken for confirmed-unused), **code-aware capacity across many languages** (JS/TS via the TypeScript compiler; Python, Go, Ruby, Java, Rust, PHP, C# via tree-sitter; a comment/string/keyword-aware text analyzer as the fallback — a signal in a comment never counts as code), **integration distance** (a second observable ranking candidates ripe vs. deep from the symbol reference graph, with the file import graph as fallback), **emergent capability discovery** (`discover`) with **distributional clustering** — proposing undeclared capabilities from the correction field alone, grouping demand that shares no surface words — and **recursive reflection** (`reflect`, `reflect --level 3`), RUMI turning its instrument on itself to tell robust discoveries from artifacts of its own tuning — and testing whether that judgement itself converges. Plus a CLI, a three-view browser **observatory** (Scan / Discover / Reflect, computed live and fully local), and baseline/compare.
+`1.1.0` — working instrument: three-field engine, scan-independent Collapse Potential with per-reading **confidence** (unknown utilization is never mistaken for confirmed-unused), **code-aware capacity across many languages** (JS/TS via the TypeScript compiler; Python, Go, Ruby, Java, Rust, PHP, C# via tree-sitter; a comment/string/keyword-aware text analyzer as the fallback — a signal in a comment never counts as code), **integration distance** (a second observable ranking candidates ripe vs. deep from the symbol reference graph, with the file import graph as fallback), **emergent capability discovery** (`discover`) with **distributional clustering** — proposing undeclared capabilities from the correction field alone, grouping demand that shares no surface words — and **recursive reflection** (`reflect`, `reflect --level 3`), RUMI turning its instrument on itself to tell robust discoveries from artifacts of its own tuning — and testing whether that judgement itself converges. Plus a CLI, a three-view browser **observatory** (Scan / Discover / Reflect, computed live and fully local), and baseline/compare.
 
 All parsing is local: tree-sitter runs on prebuilt wasm grammars shipped on disk — nothing touches the network at run time.
 

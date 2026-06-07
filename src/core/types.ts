@@ -24,15 +24,24 @@ export interface CapabilityDef {
   description?: string;
 }
 
-/** A single observed correction event: selected -> corrected. */
+/**
+ * A single intent-gap signal — evidence that a human wanted something the system
+ * didn't give. A correction (selected -> corrected) is the gold standard, but
+ * `kind` generalizes this to other behaviour (requests, repeated manual
+ * sequences, workarounds, abandonment, retries). See `fields/signals.ts`.
+ */
 export interface CorrectionEvent {
   id: string;
-  /** Capability id this correction pushes toward. */
+  /** Capability id this signal pushes toward. */
   capability: string;
+  /** Signal kind; defaults to "correction" when absent. */
+  kind?: string;
   /** Redacted "before" (the system selection). */
   before: string;
-  /** Redacted "after" (what the human corrected it toward). */
+  /** Redacted "after" (what the human wanted instead) — the arrow, when present. */
   after: string;
+  /** Optional explicit per-event weight, overriding the kind's default. */
+  weight?: number;
   /** ISO timestamp. */
   at?: string;
   /** Optional unit-vector-ish direction tags for semantic coherence. */
@@ -86,6 +95,10 @@ export interface FieldReading {
   /** Supporting evidence carried through for the report. */
   evidence: {
     correctionCount: number;
+    /** Weighted demand across all signal kinds (corrections + heat). */
+    demand: number;
+    /** Share of demand that carries a direction (arrow vs. heat), in [0,1]. */
+    arrowShare: number;
     directionCoherence: number;
     /** Whether any correction carried a direction tag. */
     directionKnown: boolean;

@@ -15,7 +15,8 @@ RUMI is structured as a small pipeline: three independent **field engines** feed
 
 | Path | Role |
 |------|------|
-| `src/fields/correction.ts` | **C(x)** — Rectifier Seed core. Aggregates correction events into pressure (count + directional coherence), and tracks whether direction was tagged at all. |
+| `src/fields/correction.ts` | **C(x)** — Rectifier Seed core. Aggregates intent-gap signals into weighted demand + directional coherence, and computes the arrow-share (how much demand carries a direction). |
+| `src/fields/signals.ts` | Intent-gap signal kinds (correction/request/repetition/workaround/abandonment/retry) — each with a weight and whether it carries an arrow (direction) or only heat. Corrections are the gold standard the rest are weighed against. |
 | `src/fields/capacity.ts` | **K(x)** — walks the repo and, per file, extracts real code identifiers via a language-aware analyzer, then matches each capability's signals against them. |
 | `src/fields/capacity-analyzers.ts` | Pluggable capacity analyzers + registry: a TypeScript-compiler analyzer for JS/TS, a tree-sitter analyzer for any grammar language, a comment/string-stripping text analyzer as the fallback. Adding a language = one entry. |
 | `src/fields/treesitter.ts` | Lazy local loader for `web-tree-sitter` + prebuilt wasm grammars (Python, Go, Ruby, Java, Rust, PHP, C#). Grammars load only for languages the repo actually contains; no native build, no runtime network. |
@@ -37,6 +38,8 @@ RUMI is structured as a small pipeline: three independent **field engines** feed
 **Capability as the coordinate.** All three fields are measured over the same index of capabilities. This is what makes the fields comparable and the intersection meaningful. Capabilities can be declared in `capabilities.json` (`scan`) or proposed by the instrument itself from correction clusters (`discover`).
 
 **Scan-independent scoring.** Each field maps its evidence into `[0,1]` with a saturating function against a *fixed* scale (`saturate(v, half) = 1 − e^(−v/half)`), never against the per-scan maximum. A capability's `CP` therefore depends only on its own evidence — not on which other capabilities share the scan — so readings are comparable across scans, `experiment compare` is a valid before/after test, and auto-proposed capabilities don't re-rank their neighbours just by appearing.
+
+**Arrows vs. heat.** The demand field accepts any intent-gap signal, not just corrections. Signals that name a destination (corrections, requests, repeated manual sequences) carry an *arrow* and build confidence in *what* to build; directionless signals (abandonment, retry) are *heat* — they raise demand magnitude but earn no confidence. The arrow-share is what lets RUMI distinguish "people clearly struggle here" from "here is what they want," instead of treating loud-but-vague friction as actionable.
 
 **Confidence alongside magnitude.** Every reading carries a `confidence` (product of per-field confidences). `CP` says how strong the collapse signal is; confidence says how much to trust it. Unknown utilization, thin correction samples, or partial signal coverage lower confidence rather than silently inflating `CP`. Absent telemetry is *unknown*, never "confirmed unused".
 

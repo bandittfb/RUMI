@@ -103,13 +103,15 @@ function readingCard(r,i,extra){
   const e=r.evidence;
   const uses = r.utilizationKnown ? (e.usageCount+' uses') : 'usage unknown';
   const warn = r.utilizationKnown ? '' : ` <span class="badge warn">⚠ usage unverified</span>`;
+  const heat = (e.arrowShare!=null && e.correctionCount>0 && e.arrowShare<0.999)
+    ? ` <span class="badge mod">${Math.round((1-e.arrowShare)*100)}% heat · direction uncertain</span>` : '';
   const files = e.capacityFiles.length
     ? `<ul class="files">${e.capacityFiles.map(x=>`<li>${x}</li>`).join('')}</ul>`
     : `<div class="empty">no capacity files matched</div>`;
   return `<div class="card">
     <h2><span class="rank">#${i+1}</span> ${r.label} <span class="cap">[${r.capability}]</span></h2>
     ${extra||''}
-    <div class="pill-row">${dBadge(r.integrationDistance)}${warn}</div>
+    <div class="pill-row">${dBadge(r.integrationDistance)}${warn}${heat}</div>
     ${row('Collapse Potential','cp',r.collapsePotential)}
     ${row('confidence','conf',r.confidence)}
     ${row('C correction','c',r.correction, e.correctionCount+' ev, coh '+e.directionCoherence)}

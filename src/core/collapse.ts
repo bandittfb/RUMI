@@ -83,9 +83,10 @@ export function computeReadings(
     const agg = corrections[cap.id];
     const ev = capacity[cap.id];
 
-    // C(x): coherent correction pressure, scored against a fixed scale.
+    // C(x): coherent demand pressure (weighted across signal kinds), scored
+    // against a fixed scale. Heat raises demand; only arrows raise confidence.
     const correction = agg
-      ? clamp01(saturate(agg.count, cHalf) * (0.5 + 0.5 * agg.coherence))
+      ? clamp01(saturate(agg.demand, cHalf) * (0.5 + 0.5 * agg.coherence))
       : 0;
 
     // K(x): breadth (share of declared signals found) × scan-independent spread.
@@ -123,6 +124,8 @@ export function computeReadings(
       utilizationKnown,
       evidence: {
         correctionCount: agg?.count ?? 0,
+        demand: round(agg?.demand ?? 0),
+        arrowShare: round(agg?.arrowShare ?? 0),
         directionCoherence: round(agg?.coherence ?? 0),
         directionKnown: agg?.directionKnown ?? false,
         capacityFiles: ev?.files ?? [],
@@ -146,10 +149,12 @@ export function computeReadings(
  * direction lowers confidence rather than buying a free 0.5 (F4).
  */
 function correctionConf(agg: CorrectionAggregate | undefined): number {
-  if (!agg || agg.count === 0) return 0;
-  const sampleSize = 1 - Math.exp(-agg.count / CORRECTION_CONFIDENCE_K);
+  if (!agg || agg.demand <= 0) return 0;
+  const sampleSize = 1 - Math.exp(-agg.demand / CORRECTION_CONFIDENCE_K);
   const directionFactor = agg.directionKnown ? 0.5 + 0.5 * agg.coherence : 0.5;
-  return clamp01(sampleSize * directionFactor);
+  // arrowShare keeps heat honest: demand with no revealed direction (all
+  // abandonment/retry) earns no confidence — we know something is wanted, not what.
+  return clamp01(sampleSize * agg.arrowShare * directionFactor);
 }
 
 /**

@@ -14,13 +14,19 @@
  */
 import type { CorrectionEvent } from "../core/types.js";
 import { clamp01 } from "../core/normalize.js";
+import { signalKind } from "./signals.js";
 
 export interface CorrectionAggregate {
   capability: string;
+  /** Number of signal events (for display). */
   count: number;
+  /** Weighted demand across all signal kinds (the magnitude that drives C). */
+  demand: number;
+  /** Share of demand that carries a direction — arrow vs. heat — in [0,1]. */
+  arrowShare: number;
   /** Directional coherence in [0,1] — share of the dominant direction tag. */
   coherence: number;
-  /** Whether ANY correction carried a direction tag (vs. all untagged). */
+  /** Whether ANY directional signal carried an explicit direction tag. */
   directionKnown: boolean;
 }
 
@@ -32,10 +38,29 @@ export function aggregateCorrections(events: CorrectionEvent[]): Record<string, 
 
   const out: Record<string, CorrectionAggregate> = {};
   for (const [capability, evs] of Object.entries(byCap)) {
-    const count = evs.length;
-    const coherence = directionCoherence(evs);
-    const directionKnown = evs.some((e) => (e.direction?.length ?? 0) > 0);
-    out[capability] = { capability, count, coherence: clamp01(coherence), directionKnown };
+    let demand = 0;
+    let arrowWeight = 0;
+    const arrowEvents: CorrectionEvent[] = [];
+    for (const e of evs) {
+      const kind = signalKind(e.kind);
+      const w = e.weight ?? kind.weight;
+      demand += w;
+      // A signal carries an arrow if its kind is directional AND it actually
+      // names a destination (an "after"). Heat kinds never carry an arrow.
+      if (kind.directional && e.after && e.after.length > 0) {
+        arrowWeight += w;
+        arrowEvents.push(e);
+      }
+    }
+    const coherence = directionCoherence(arrowEvents);
+    out[capability] = {
+      capability,
+      count: evs.length,
+      demand,
+      arrowShare: demand > 0 ? clamp01(arrowWeight / demand) : 0,
+      coherence: clamp01(coherence),
+      directionKnown: arrowEvents.some((e) => (e.direction?.length ?? 0) > 0)
+    };
   }
   return out;
 }

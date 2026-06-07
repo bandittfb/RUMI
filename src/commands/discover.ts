@@ -141,7 +141,10 @@ function printDiscovery(report: DiscoveryReport, top: number): void {
     out.write(`      proposed signals   : ${r.signals.join(", ")}\n`);
     out.write(`      Collapse Potential : ${bar(r.collapsePotential)} ${r.collapsePotential.toFixed(3)}\n`);
     out.write(`      confidence         : ${bar(r.confidence)} ${r.confidence.toFixed(3)}${r.utilizationKnown ? "" : "   ⚠ usage unverified"}\n`);
-    out.write(`      C  correction      : ${bar(r.correction)} ${r.correction.toFixed(3)}  (${r.evidence.correctionCount} events, coherence ${r.evidence.directionCoherence})\n`);
+    out.write(`      C  correction      : ${bar(r.correction)} ${r.correction.toFixed(3)}  (${r.evidence.correctionCount} signals, coherence ${r.evidence.directionCoherence})\n`);
+    if (r.evidence.correctionCount > 0 && r.evidence.arrowShare < 0.999) {
+      out.write(`      demand mix         : ${Math.round(r.evidence.arrowShare * 100)}% directional · ${Math.round((1 - r.evidence.arrowShare) * 100)}% heat (direction uncertain)\n`);
+    }
     out.write(`      K  capacity        : ${bar(r.capacity)} ${r.capacity.toFixed(3)}  (${r.evidence.matchedSignals.length} signals, ${r.evidence.capacityFiles.length} files)\n`);
     out.write(`      U  utilization     : ${bar(r.utilization)} ${r.utilization.toFixed(3)}  (${uses})\n`);
     if (r.evidence.capacityFiles.length) {
