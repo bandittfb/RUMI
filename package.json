@@ -1,6 +1,6 @@
 {
   "name": "rumi",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "RUMI — Revealed Uncollapsed Manifold Instrument. A local-first instrument for discovering latent affordances at the intersection of correction pressure, code capacity, and utilization.",
   "type": "module",
   "bin": {
@@ -12,6 +12,7 @@
     "rumi": "node dist/index.js",
     "scan": "node dist/index.js scan --repo examples/sample-repo --data examples/data",
     "discover": "node dist/index.js discover --repo examples/sample-repo --data examples/data",
+    "reflect": "node dist/index.js reflect --repo examples/sample-repo --data examples/data",
     "dashboard": "node dist/index.js dashboard",
     "baseline": "node dist/index.js experiment baseline --data examples/data",
     "clean": "rm -rf dist .rumi"

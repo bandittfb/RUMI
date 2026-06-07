@@ -84,6 +84,7 @@ Contrast with the other capabilities the same scan classifies:
 ```
 rumi scan       --repo <dir> --data <dir> [--json] [--top N]
 rumi discover   --repo <dir> --data <dir> [--json] [--top N]
+rumi reflect    --repo <dir> --data <dir> [--json] [--top N]
 rumi dashboard  [--port 4317]
 rumi experiment baseline --repo <dir> --data <dir>
 rumi experiment compare  --repo <dir> --data <dir>
@@ -148,6 +149,42 @@ It reconstructs the renewal-risk capability on its own and points at the real fi
 
 The clustering is local and dependency-free (corrections never leave the machine): distributional co-occurrence over the corpus itself. A pretrained-embedding backend — for true outside-world synonymy ("cancel my plan" ≈ "downgrade subscription") — is a planned optional add-on; it would keep data local but introduce a model download, so it is opt-in rather than default.
 
+## The recursion: `reflect` (Level-2)
+
+RUMI measures a target system's displacement field — a selection displaces
+alternatives, and the displaced field reveals latent features. But RUMI is
+*itself* a system that makes a selection: it picks the top candidates, and that
+choice depends on RUMI's own arbitrary configuration (the saturation scales, the
+unknown-usage prior, the classification thresholds). So RUMI can be turned on
+itself.
+
+`reflect` sweeps RUMI's own parameter manifold (729 configurations), re-runs the
+engine at each point, and measures **collapse stability** — does a discovery
+survive RUMI displacing its own parameters?
+
+```bash
+npm run reflect
+```
+
+```
+Headline: RUMI's top selection [enterprise-renewal-risk] holds rank #1 in 100%
+of its own plausible self-configurations.
+
+▸ Enterprise Renewal Risk Review  [enterprise-renewal-risk]
+    stays rank #1      : 100%
+    classed a feature  : 70%
+    most sensitive to  : cHalf  (feature 89% at cHalf=3 vs 33% at cHalf=6)
+    → consistently RUMI's #1 pick; MOSTLY ROBUST — a feature across most of
+      RUMI's configuration space, threshold-sensitive at the margin.
+```
+
+This separates a *robust* discovery (survives RUMI's self-displacement) from a
+*fragile* one (an artifact of the current tuning), and attributes any fragility
+to a specific knob — here, whether renewal-risk reads as a feature depends most
+on `cHalf`, how much correction volume RUMI requires to call pressure "high".
+It is RUMI's own thesis — examine the field a selection displaces — applied to
+RUMI's own selection, yielding a meta-confidence no single reading can.
+
 ## Inputs
 
 RUMI reads a data directory containing:
@@ -160,7 +197,7 @@ Plus a target repo, scanned locally for capacity signals. **Nothing is uploaded.
 
 ## Status
 
-`0.7.0` — working instrument: three-field engine, scan-independent Collapse Potential with per-reading **confidence** (unknown utilization is never mistaken for confirmed-unused), **code-aware capacity across many languages** (JS/TS via the TypeScript compiler; Python, Go, Ruby, Java, Rust, PHP, C# via tree-sitter; a comment/string/keyword-aware text analyzer as the fallback — a signal in a comment never counts as code), **integration distance** (a second observable ranking candidates ripe vs. deep from the symbol reference graph, with the file import graph as fallback), CLI, local dashboard, baseline/compare, and **emergent capability discovery** (`discover`) with **distributional clustering** — the instrument can propose undeclared capabilities from the correction field alone, grouping demand that shares no surface words.
+`0.8.0` — working instrument: three-field engine, scan-independent Collapse Potential with per-reading **confidence** (unknown utilization is never mistaken for confirmed-unused), **code-aware capacity across many languages** (JS/TS via the TypeScript compiler; Python, Go, Ruby, Java, Rust, PHP, C# via tree-sitter; a comment/string/keyword-aware text analyzer as the fallback — a signal in a comment never counts as code), **integration distance** (a second observable ranking candidates ripe vs. deep from the symbol reference graph, with the file import graph as fallback), **emergent capability discovery** (`discover`) with **distributional clustering** — proposing undeclared capabilities from the correction field alone, grouping demand that shares no surface words — and **Level-2 reflection** (`reflect`), RUMI turning its instrument on itself to tell robust discoveries from artifacts of its own tuning. Plus a CLI, local dashboard, and baseline/compare.
 
 All parsing is local: tree-sitter runs on prebuilt wasm grammars shipped on disk — nothing touches the network at run time.
 

@@ -27,7 +27,8 @@ RUMI is structured as a small pipeline: three independent **field engines** feed
 | `src/core/collapse.ts` | Scores each field on a fixed, scan-independent scale, computes `CP = C · K · (1 − U)` and a per-reading **confidence**, plus a human interpretation. |
 | `src/core/normalize.ts` | Shared numeric helpers: `saturate` (scan-independent scoring), clamp, round. |
 | `src/core/load.ts` | Loads `capabilities`, `corrections`, `usage` from a data dir. |
-| `src/commands/*` | `scan`, `discover`, `dashboard`, `experiment` (baseline/compare). |
+| `src/commands/*` | `scan`, `discover`, `reflect`, `dashboard`, `experiment` (baseline/compare). |
+| `src/commands/reflect.ts` | **Level-2 reflection** — sweeps RUMI's own parameter manifold (config knobs × thresholds), re-scores, and reports collapse stability + the knob each discovery is most sensitive to. RUMI's instrument turned on itself. |
 | `src/index.ts` | Dependency-free arg parser + command dispatch. |
 
 ## Design choices
@@ -53,7 +54,7 @@ Capacity and proposal are deliberately seams. Status and planned depth, roughly 
 3. **Candidate auto-proposal** — *working* (`discover`, `propose.ts`): distributional (co-occurrence) clustering of corrections into proposed capabilities, so corrections about the same thing group even with no shared words. Next depth: an opt-in pretrained-embedding backend for outside-world synonymy (local inference, one model download), and joining proposals to the code graph.
 4. **IDE / workbench panel** — surface candidates linked to actual files inside VS Code or a Codex-style workspace ("architectural microscope").
 5. **Sidecar mode** — optional self-hosted collector for team telemetry, CI gate on Collapse Potential regressions.
-6. **Level-2 / Level-3 analysis** — treat RUMI's own discovery as a computation with its own displacement field (recursive manifold analysis), per the Displacement Code Challenge's final frontier.
+6. **Level-2 / Level-3 analysis** — *Level-2 prototyped* (`reflect`): RUMI's selection of top candidates depends on its own configuration, so reflection sweeps that parameter manifold and measures which discoveries survive RUMI displacing itself (robust) vs. which are artifacts of tuning (fragile), attributing fragility to specific knobs. Level-3 horizon: the reflection itself has parameters (which knobs, which ranges) — reflecting on the reflection, recursive manifold analysis per the Challenge's final frontier.
 
 ## The discovered observable
 

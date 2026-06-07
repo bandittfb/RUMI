@@ -39,31 +39,45 @@ export interface CollapseInputs {
  * of the optimistic U=0 (→ full (1-U)=1), we use a neutral prior for the CP
  * magnitude and let confidence carry the uncertainty.
  */
-const UNKNOWN_UTIL_PRIOR = 0.5;
 /** Confidence multiplier applied when utilization is unknown rather than observed. */
 const UNKNOWN_UTIL_CONFIDENCE = 0.2;
 /** Sample size at which correction count alone yields ~0.6 confidence. */
 const CORRECTION_CONFIDENCE_K = 3;
 
 /**
- * Scan-independent calibration scales (F3). Each field is scored by `saturate`
+ * Scan-independent calibration knobs (F3). Each field is scored by `saturate`
  * against a FIXED reference rather than the per-scan maximum, so a capability's
  * Collapse Potential depends only on its own evidence — not on which other
- * capabilities share the scan. These are the instrument's calibration knobs:
+ * capabilities share the scan.
  *
- *   C_HALF  correction count at which pressure is ~63% of saturation
- *   K_HALF  number of distinct files at which spread is ~63% of saturation
- *   U_HALF  usage count at which a capability counts as ~63% "in use"
+ *   cHalf             correction count at which pressure is ~63% of saturation
+ *   kHalf             distinct files at which spread is ~63% of saturation
+ *   uHalf             usage count at which a capability counts as ~63% "in use"
+ *   unknownUtilPrior  utilization assumed when telemetry is absent (neither 0 nor 1)
  *
- * U_HALF in particular is domain-dependent (what counts as "used" differs by
- * product scale); it is exposed here as the primary knob to calibrate per repo.
+ * These are RUMI's own degrees of freedom. Level-2 reflection (`reflect`)
+ * perturbs them to test whether a discovery is robust or an artifact of tuning.
  */
-const C_HALF = 3;
-const K_HALF = 2;
-const U_HALF = 20;
+export interface CollapseConfig {
+  cHalf: number;
+  kHalf: number;
+  uHalf: number;
+  unknownUtilPrior: number;
+}
 
-export function computeReadings(inputs: CollapseInputs): FieldReading[] {
+export const DEFAULT_COLLAPSE_CONFIG: CollapseConfig = {
+  cHalf: 3,
+  kHalf: 2,
+  uHalf: 20,
+  unknownUtilPrior: 0.5
+};
+
+export function computeReadings(
+  inputs: CollapseInputs,
+  config: CollapseConfig = DEFAULT_COLLAPSE_CONFIG
+): FieldReading[] {
   const { capabilities, corrections, capacity, usage } = inputs;
+  const { cHalf, kHalf, uHalf, unknownUtilPrior } = config;
 
   const readings: FieldReading[] = capabilities.map((cap) => {
     const agg = corrections[cap.id];
@@ -71,25 +85,25 @@ export function computeReadings(inputs: CollapseInputs): FieldReading[] {
 
     // C(x): coherent correction pressure, scored against a fixed scale.
     const correction = agg
-      ? clamp01(saturate(agg.count, C_HALF) * (0.5 + 0.5 * agg.coherence))
+      ? clamp01(saturate(agg.count, cHalf) * (0.5 + 0.5 * agg.coherence))
       : 0;
 
     // K(x): breadth (share of declared signals found) × scan-independent spread.
     const breadth = cap.signals.length > 0 && ev
       ? ev.matchedSignals.length / cap.signals.length
       : 0;
-    const capacityVal = clamp01(breadth * saturate(ev?.files.length ?? 0, K_HALF));
+    const capacityVal = clamp01(breadth * saturate(ev?.files.length ?? 0, kHalf));
 
     // U(x): observed utilization on a fixed scale; absent telemetry is "unknown".
     const utilizationKnown = usage.known.has(cap.id);
     const utilization = utilizationKnown
-      ? saturate(usage.totals[cap.id] ?? 0, U_HALF)
+      ? saturate(usage.totals[cap.id] ?? 0, uHalf)
       : 0;
 
     // For the CP magnitude, an unknown utilization uses a neutral prior rather
     // than the optimistic zero, so absent telemetry cannot masquerade as
     // "confirmed unused" and inflate the score to its maximum.
-    const uForCP = utilizationKnown ? utilization : UNKNOWN_UTIL_PRIOR;
+    const uForCP = utilizationKnown ? utilization : unknownUtilPrior;
     const collapsePotential = correction * capacityVal * (1 - uForCP);
 
     const correctionConfidence = correctionConf(agg);
@@ -148,24 +162,55 @@ function capacityConf(ev: CapacityEvidence | undefined, declaredSignals: number)
   return clamp01(ev.matchedSignals.length / declaredSignals);
 }
 
+/** Classification thresholds — what counts as "high" / "low" for a field. */
+export interface ClassifyThresholds {
+  hi: number;
+  lo: number;
+}
+
+export const DEFAULT_THRESHOLDS: ClassifyThresholds = { hi: 0.6, lo: 0.34 };
+
+export type Category =
+  | "uncollapsed-feature"
+  | "candidate-unverified"
+  | "unsupported-wish"
+  | "dormant-capacity"
+  | "already-collapsed"
+  | "low-signal";
+
+/** The category a reading falls into, given thresholds. The basis of `interpret`. */
+export function categorize(
+  r: FieldReading,
+  thresholds: ClassifyThresholds = DEFAULT_THRESHOLDS
+): Category {
+  const hi = (x: number) => x >= thresholds.hi;
+  const lo = (x: number) => x <= thresholds.lo;
+  if (hi(r.correction) && hi(r.capacity) && !r.utilizationKnown) return "candidate-unverified";
+  if (hi(r.correction) && hi(r.capacity) && lo(r.utilization)) return "uncollapsed-feature";
+  if (hi(r.correction) && lo(r.capacity)) return "unsupported-wish";
+  if (hi(r.capacity) && lo(r.correction) && lo(r.utilization)) return "dormant-capacity";
+  if (hi(r.utilization)) return "already-collapsed";
+  return "low-signal";
+}
+
+/** Whether a category represents a latent feature RUMI is surfacing as a lead. */
+export function isCandidate(category: Category): boolean {
+  return category === "uncollapsed-feature" || category === "candidate-unverified";
+}
+
+const CATEGORY_TEXT: Record<Category, string> = {
+  "candidate-unverified":
+    "Candidate uncollapsed feature — BUT utilization is unknown: confirm it isn't already in use before acting.",
+  "uncollapsed-feature":
+    "Uncollapsed feature: strong correction pressure meets latent capacity that is barely used.",
+  "unsupported-wish":
+    "Unsupported wish: users push toward this, but the code does not yet support it.",
+  "dormant-capacity": "Dormant capacity: the code supports it, but nobody is asking for it.",
+  "already-collapsed": "Already collapsed: this capability is realized and in active use.",
+  "low-signal": "Low signal: no strong collapse pressure in this region."
+};
+
 /** A short, human interpretation of where a reading sits in the field. */
-export function interpret(r: FieldReading): string {
-  const hi = (x: number) => x >= 0.6;
-  const lo = (x: number) => x <= 0.34;
-  if (hi(r.correction) && hi(r.capacity) && !r.utilizationKnown) {
-    return "Candidate uncollapsed feature — BUT utilization is unknown: confirm it isn't already in use before acting.";
-  }
-  if (hi(r.correction) && hi(r.capacity) && lo(r.utilization)) {
-    return "Uncollapsed feature: strong correction pressure meets latent capacity that is barely used.";
-  }
-  if (hi(r.correction) && lo(r.capacity)) {
-    return "Unsupported wish: users push toward this, but the code does not yet support it.";
-  }
-  if (hi(r.capacity) && lo(r.correction) && lo(r.utilization)) {
-    return "Dormant capacity: the code supports it, but nobody is asking for it.";
-  }
-  if (hi(r.utilization)) {
-    return "Already collapsed: this capability is realized and in active use.";
-  }
-  return "Low signal: no strong collapse pressure in this region.";
+export function interpret(r: FieldReading, thresholds: ClassifyThresholds = DEFAULT_THRESHOLDS): string {
+  return CATEGORY_TEXT[categorize(r, thresholds)];
 }
