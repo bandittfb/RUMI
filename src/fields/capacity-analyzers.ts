@@ -63,8 +63,15 @@ function addIdentifier(tok: CodeTokens, id: string): void {
   for (const part of parts) tok.parts.add(part);
 }
 
+/** Build the match tokens (full + word-parts) for a single identifier name. */
+export function tokensForIdentifier(id: string): CodeTokens {
+  const tok: CodeTokens = { full: new Set(), parts: new Set() };
+  addIdentifier(tok, id);
+  return tok;
+}
+
 /**
- * Does a capability signal match the code tokens of a file?
+ * Does a capability signal match the code tokens of a file (or a symbol name)?
  *
  * A single-word signal ("renewal") matches any identifier word-part; a compound
  * signal ("invoiceTotal", "invoice_total") matches when its normalized join is

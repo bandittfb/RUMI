@@ -1,6 +1,6 @@
 {
   "name": "rumi",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "RUMI — Revealed Uncollapsed Manifold Instrument. A local-first instrument for discovering latent affordances at the intersection of correction pressure, code capacity, and utilization.",
   "type": "module",
   "bin": {

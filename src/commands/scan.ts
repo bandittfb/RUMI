@@ -7,7 +7,12 @@ import { scanCapacity } from "../fields/capacity.js";
 import { aggregateUsage } from "../fields/utilization.js";
 import { computeReadings, interpret } from "../core/collapse.js";
 import { buildImportGraph } from "../fields/graph.js";
-import { integrationDistance, integrationLabel } from "../fields/integration.js";
+import { buildSymbolGraph } from "../fields/symbols.js";
+import {
+  integrationDistance,
+  symbolIntegrationDistance,
+  integrationLabel
+} from "../fields/integration.js";
 import type { ScanReport } from "../core/types.js";
 
 const RUMI_DIR = ".rumi";
@@ -40,10 +45,14 @@ export async function runScan(opts: ScanOptions): Promise<ScanReport> {
     usage: usageAgg
   });
 
-  // Secondary observable: how far apart each capability's pieces are.
-  const graph = await buildImportGraph(opts.repo);
+  // Secondary observable: how far apart each capability's pieces are. Prefer the
+  // symbol reference graph; fall back to the file import graph.
+  const fileGraph = await buildImportGraph(opts.repo);
+  const symbolGraph = await buildSymbolGraph(opts.repo);
   for (const r of readings) {
-    r.integrationDistance = integrationDistance(r.evidence.capacityFiles, graph);
+    const symbolD = symbolIntegrationDistance(r.evidence.matchedSignals, symbolGraph);
+    r.integrationDistance =
+      symbolD !== null ? symbolD : integrationDistance(r.evidence.capacityFiles, fileGraph);
   }
 
   const report: ScanReport = {
@@ -92,8 +101,8 @@ function printReport(report: ScanReport, top: number): void {
     out.write(`      C  correction      : ${bar(r.correction)} ${r.correction.toFixed(3)}  (${r.evidence.correctionCount} events, coherence ${r.evidence.directionCoherence})\n`);
     out.write(`      K  capacity        : ${bar(r.capacity)} ${r.capacity.toFixed(3)}  (${r.evidence.matchedSignals.length} signals, ${r.evidence.capacityFiles.length} files)\n`);
     out.write(`      U  utilization     : ${bar(r.utilization)} ${r.utilization.toFixed(3)}  (${uses})\n`);
-    const dLabel = integrationLabel(r.integrationDistance ?? null, r.evidence.capacityFiles.length);
-    if (dLabel) {
+    const dLabel = integrationLabel(r.integrationDistance ?? null);
+    if (dLabel && r.evidence.capacityFiles.length > 0) {
       const d = r.integrationDistance ?? 0;
       out.write(`      D  integration    : ${bar(d)} ${d.toFixed(3)}  ${dLabel}\n`);
     }

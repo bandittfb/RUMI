@@ -115,9 +115,13 @@ On the example, the strongest candidate by `CP` is *deep*, while a slightly weak
 ▸ Weekly Digest                    CP 0.421   D 0.333  RIPE  (2 files, already importing)
 ```
 
-`D` is computed from the same code graph as capacity (TypeScript imports parsed
-directly; relative imports in other languages by best-effort), and like every
-RUMI field it is scan-independent.
+`D` prefers a **symbol reference graph** — distance between the actual
+definitions a capability resolves to (does `buildDigest` really reference
+`sendNotification`?), so two functions in the *same file* that never call each
+other read as *deep*, not falsely co-located. When a capability's signals don't
+resolve to ≥2 defined symbols (other languages, or signals that map only to
+uses) it falls back to the **file import graph** (JS/TS and Python imports
+resolved). Like every RUMI field, `D` is scan-independent.
 
 ## The divining rod: `discover`
 
@@ -156,7 +160,7 @@ Plus a target repo, scanned locally for capacity signals. **Nothing is uploaded.
 
 ## Status
 
-`0.5.0` — working instrument: three-field engine, scan-independent Collapse Potential with per-reading **confidence** (unknown utilization is never mistaken for confirmed-unused), **code-aware capacity across many languages** (JS/TS via the TypeScript compiler; Python, Go, Ruby, Java, Rust, PHP, C# via tree-sitter; a comment/string/keyword-aware text analyzer as the fallback — a signal in a comment never counts as code), **integration distance** (a second observable ranking candidates ripe vs. deep from the repo's import graph; JS/TS and Python imports resolved), CLI, local dashboard, baseline/compare, and **emergent capability discovery** (`discover`) — the instrument can propose undeclared capabilities from the correction field alone.
+`0.7.0` — working instrument: three-field engine, scan-independent Collapse Potential with per-reading **confidence** (unknown utilization is never mistaken for confirmed-unused), **code-aware capacity across many languages** (JS/TS via the TypeScript compiler; Python, Go, Ruby, Java, Rust, PHP, C# via tree-sitter; a comment/string/keyword-aware text analyzer as the fallback — a signal in a comment never counts as code), **integration distance** (a second observable ranking candidates ripe vs. deep from the symbol reference graph, with the file import graph as fallback), CLI, local dashboard, baseline/compare, and **emergent capability discovery** (`discover`) with **distributional clustering** — the instrument can propose undeclared capabilities from the correction field alone, grouping demand that shares no surface words.
 
 All parsing is local: tree-sitter runs on prebuilt wasm grammars shipped on disk — nothing touches the network at run time.
 
