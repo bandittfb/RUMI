@@ -123,6 +123,8 @@ RUMI field it is scan-independent.
 
 `scan` measures Collapse Potential over capabilities *you declared*. `discover` removes that scaffolding — it is handed **no `capabilities.json`** and proposes the capabilities itself, purely from the correction field. It clusters corrections by what users keep pushing toward, derives each cluster's capacity signals from the tokens that recur across it, scans the repo for them, and runs the ordinary collapse engine. A dense, coherent knot of corrections that *no one named* is exactly where an emergent feature first becomes visible — before there is a word for it.
 
+Clustering is **distributional**, not just lexical: terms that keep appearing in the same context are treated as related, so corrections that share *no surface words* still group when they are about the same thing. On the example, "export everything to CSV" and "download all results" merge into a single emergent *Csv / Download / Result* capability despite having no word in common.
+
 ```bash
 npm run discover
 ```
@@ -140,7 +142,7 @@ On the bundled example, given 10 raw corrections and zero declared capabilities,
 
 It reconstructs the renewal-risk capability on its own and points at the real files — with **no capability declared**. Because an auto-proposed capability has no usage record, its utilization is *unknown by construction*, so every emergent candidate arrives flagged as a lead to verify, never a conclusion. This is the line between divining rod and horoscope: the proposal is only confirmed if naming and building it makes the correction pressure actually decay (`experiment compare`).
 
-The clustering is deliberately local and zero-dependency (corrections never leave the machine); lexical overlap is the floor, with local embeddings / a code-graph join as the planned depth.
+The clustering is local and dependency-free (corrections never leave the machine): distributional co-occurrence over the corpus itself. A pretrained-embedding backend — for true outside-world synonymy ("cancel my plan" ≈ "downgrade subscription") — is a planned optional add-on; it would keep data local but introduce a model download, so it is opt-in rather than default.
 
 ## Inputs
 

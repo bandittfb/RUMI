@@ -36,6 +36,11 @@ export interface ProposeOptions {
   threshold?: number;
   /** Max auto-derived signals per proposed capability. */
   maxSignals?: number;
+  /**
+   * Co-occurrence count at which two terms are treated as contextually related.
+   * Set to 0 to disable distributional expansion (pure lexical clustering).
+   */
+  minCooccurrence?: number;
 }
 
 const STOPWORDS = new Set([
@@ -81,17 +86,64 @@ function overlapCoefficient(a: Set<string>, b: Set<string>): number {
   return inter / Math.min(a.size, b.size);
 }
 
+/**
+ * Distributional relatedness: count how often each pair of terms co-occurs in
+ * the same correction across the whole corpus. Terms that keep appearing in the
+ * same context are related even when they never appear in the *same* correction
+ * — this is what lets "export everything to CSV" and "download all results"
+ * cluster together despite sharing no words.
+ */
+function buildCooccurrence(tokenSets: Set<string>[]): Map<string, Map<string, number>> {
+  const co = new Map<string, Map<string, number>>();
+  const bump = (a: string, b: string): void => {
+    const row = co.get(a) ?? co.set(a, new Map()).get(a)!;
+    row.set(b, (row.get(b) ?? 0) + 1);
+  };
+  for (const set of tokenSets) {
+    const arr = [...set];
+    for (let i = 0; i < arr.length; i++) {
+      for (let j = i + 1; j < arr.length; j++) {
+        bump(arr[i], arr[j]);
+        bump(arr[j], arr[i]);
+      }
+    }
+  }
+  return co;
+}
+
+/** Expand a correction's tokens with their contextually-related neighbours. */
+function expandTokens(
+  base: Set<string>,
+  co: Map<string, Map<string, number>>,
+  minCooccurrence: number
+): Set<string> {
+  if (minCooccurrence <= 0) return base;
+  const out = new Set(base);
+  for (const t of base) {
+    const neighbours = co.get(t);
+    if (!neighbours) continue;
+    for (const [other, n] of neighbours) if (n >= minCooccurrence) out.add(other);
+  }
+  return out;
+}
+
 export function proposeCapabilities(
   events: CorrectionEvent[],
   opts: ProposeOptions = {}
 ): ProposedCapability[] {
   const threshold = opts.threshold ?? 0.34;
   const maxSignals = opts.maxSignals ?? 6;
+  const minCooccurrence = opts.minCooccurrence ?? 1;
 
+  // Original tokens ground the derived signals; expanded tokens (original plus
+  // contextually co-occurring terms) drive clustering, so corrections about the
+  // same thing group even when they share no surface words.
   const tokens = events.map((e) => tokenize(e.after));
+  const cooccurrence = buildCooccurrence(tokens);
+  const clusterTokens = tokens.map((t) => expandTokens(t, cooccurrence, minCooccurrence));
 
   // Single-linkage clustering via union-find: link any two corrections whose
-  // "after" texts overlap enough, then take connected components as clusters.
+  // contextual token sets overlap enough, then take connected components.
   const parent = events.map((_, i) => i);
   const find = (x: number): number => {
     while (parent[x] !== x) {
@@ -108,7 +160,7 @@ export function proposeCapabilities(
 
   for (let i = 0; i < events.length; i++) {
     for (let j = i + 1; j < events.length; j++) {
-      if (overlapCoefficient(tokens[i], tokens[j]) >= threshold) union(i, j);
+      if (overlapCoefficient(clusterTokens[i], clusterTokens[j]) >= threshold) union(i, j);
     }
   }
 
