@@ -6,6 +6,8 @@ import { aggregateCorrections } from "../fields/correction.js";
 import { scanCapacity } from "../fields/capacity.js";
 import { aggregateUsage } from "../fields/utilization.js";
 import { computeReadings, interpret } from "../core/collapse.js";
+import { buildImportGraph } from "../fields/graph.js";
+import { integrationDistance, integrationLabel } from "../fields/integration.js";
 import type { ScanReport } from "../core/types.js";
 
 const RUMI_DIR = ".rumi";
@@ -37,6 +39,12 @@ export async function runScan(opts: ScanOptions): Promise<ScanReport> {
     capacity: capacityEvidence,
     usage: usageAgg
   });
+
+  // Secondary observable: how far apart each capability's pieces are.
+  const graph = await buildImportGraph(opts.repo);
+  for (const r of readings) {
+    r.integrationDistance = integrationDistance(r.evidence.capacityFiles, graph);
+  }
 
   const report: ScanReport = {
     generatedAt: new Date().toISOString(),
@@ -84,6 +92,11 @@ function printReport(report: ScanReport, top: number): void {
     out.write(`      C  correction      : ${bar(r.correction)} ${r.correction.toFixed(3)}  (${r.evidence.correctionCount} events, coherence ${r.evidence.directionCoherence})\n`);
     out.write(`      K  capacity        : ${bar(r.capacity)} ${r.capacity.toFixed(3)}  (${r.evidence.matchedSignals.length} signals, ${r.evidence.capacityFiles.length} files)\n`);
     out.write(`      U  utilization     : ${bar(r.utilization)} ${r.utilization.toFixed(3)}  (${uses})\n`);
+    const dLabel = integrationLabel(r.integrationDistance ?? null, r.evidence.capacityFiles.length);
+    if (dLabel) {
+      const d = r.integrationDistance ?? 0;
+      out.write(`      D  integration    : ${bar(d)} ${d.toFixed(3)}  ${dLabel}\n`);
+    }
     out.write(`      -> ${interpret(r)}\n`);
   }
   out.write("\n  Saved full report to .rumi/last-report.json\n");

@@ -59,6 +59,7 @@ Running against `examples/sample-repo` surfaces, as the top candidate:
     C  correction      : 0.811  (5 events, coherence 1)
     K  capacity        : 0.865  (6 signals, 4 files)
     U  utilization     : 0.049  (1 uses)
+    D  integration    : 1.000  DEEP — pieces scattered with no shared dependency path
     → Uncollapsed feature: strong correction pressure meets latent capacity that is barely used.
 ```
 
@@ -89,6 +90,34 @@ rumi experiment compare  --repo <dir> --data <dir>
 ```
 
 `experiment baseline` snapshots the field; after you ship a change, `experiment compare` checks whether correction pressure actually decayed and utilization rose — i.e. whether the latent affordance **collapsed** into a real, used workflow. The instrument verifies collapse; it does not stop at discovery.
+
+## Integration distance: ripe vs. deep
+
+Collapse Potential tells you a latent feature is *wanted and possible*. It does
+not tell you how much work it is. **Integration distance** `D(x)` is a second,
+independent observable: given the files where a capability's pieces were found,
+it measures how far apart they are in the repo's import graph.
+
+```
+Collapse Potential   → how strongly the system wants this   (is it latent?)
+Integration distance → how far apart the pieces are         (how hard to build?)
+```
+
+These are orthogonal, so they sort candidates into actionable quadrants:
+
+- **high CP, low D → RIPE.** Strongly wanted, pieces already connected. A quick wire-up — build it now.
+- **high CP, high D → DEEP.** Strongly wanted, but pieces scattered with no shared dependency path. Real composition work.
+
+On the example, the strongest candidate by `CP` is *deep*, while a slightly weaker one is *ripe* — exactly the prioritization a backlog can't give you:
+
+```
+▸ Enterprise Renewal Risk Review   CP 0.667   D 1.000  DEEP  (4 unconnected files)
+▸ Weekly Digest                    CP 0.421   D 0.333  RIPE  (2 files, already importing)
+```
+
+`D` is computed from the same code graph as capacity (TypeScript imports parsed
+directly; relative imports in other languages by best-effort), and like every
+RUMI field it is scan-independent.
 
 ## The divining rod: `discover`
 
@@ -125,6 +154,6 @@ Plus a target repo, scanned locally for capacity signals. **Nothing is uploaded.
 
 ## Status
 
-`0.3.0` — working instrument: three-field engine, scan-independent Collapse Potential with per-reading **confidence** (unknown utilization is never mistaken for confirmed-unused), **code-aware capacity** (JS/TS parsed with the TypeScript compiler; a comment/string/keyword-aware analyzer for every other language, so a signal in a comment never counts as code), CLI, local dashboard, baseline/compare, and **emergent capability discovery** (`discover`) — the instrument can propose undeclared capabilities from the correction field alone.
+`0.4.0` — working instrument: three-field engine, scan-independent Collapse Potential with per-reading **confidence** (unknown utilization is never mistaken for confirmed-unused), **code-aware capacity** (JS/TS parsed with the TypeScript compiler; a comment/string/keyword-aware analyzer for every other language), **integration distance** (a second observable ranking candidates ripe vs. deep from the repo's import graph), CLI, local dashboard, baseline/compare, and **emergent capability discovery** (`discover`) — the instrument can propose undeclared capabilities from the correction field alone.
 
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the design and roadmap. Next depth: per-language (tree-sitter) capacity analyzers, integration-distance as a secondary observable, local-embedding clustering for `discover`, correction-capture SDK, VS Code panel, recursive / Level-3 analysis.
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the design and roadmap. Next depth: per-language (tree-sitter) capacity analyzers, local-embedding clustering for `discover`, correction-capture SDK, VS Code panel, recursive / Level-3 analysis.

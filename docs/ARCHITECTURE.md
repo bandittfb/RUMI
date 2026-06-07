@@ -20,6 +20,8 @@ RUMI is structured as a small pipeline: three independent **field engines** feed
 | `src/fields/capacity-analyzers.ts` | Pluggable capacity analyzers + registry: a TypeScript-compiler analyzer for JS/TS, a comment/string-stripping text analyzer as the fallback for every other language. Adding a language = one analyzer + one registry line. |
 | `src/fields/utilization.ts` | **U(x)** — aggregates usage telemetry and tracks which capabilities were *observed*. Absent telemetry is **unknown**, not a confident zero. |
 | `src/fields/propose.ts` | **Capability auto-proposal** — clusters corrections by lexical overlap (single-linkage union-find) and derives capacity signals from recurring tokens. The divining rod's engine. |
+| `src/fields/graph.ts` | Builds the repo's intra-project import graph (TS compiler for JS/TS; relative-path regex otherwise) — the substrate for integration distance. |
+| `src/fields/integration.ts` | **D(x)** — integration distance: mean pairwise import-graph distance over a capability's files. A *secondary* observable (ripe vs. deep), deliberately not part of CP. |
 | `src/core/collapse.ts` | Scores each field on a fixed, scan-independent scale, computes `CP = C · K · (1 − U)` and a per-reading **confidence**, plus a human interpretation. |
 | `src/core/normalize.ts` | Shared numeric helpers: `saturate` (scan-independent scoring), clamp, round. |
 | `src/core/load.ts` | Loads `capabilities`, `corrections`, `usage` from a data dir. |
@@ -36,13 +38,15 @@ RUMI is structured as a small pipeline: three independent **field engines** feed
 
 **Multiplicative gate.** `CP` is a product, not a sum, on purpose. A latent affordance requires *all three* conditions simultaneously; an additive score would let a single loud field manufacture a false candidate.
 
+**Two observables, kept orthogonal.** Collapse Potential answers "how strongly is this latent?"; integration distance `D(x)` answers "how far apart are the pieces?". They are independent axes — a strongly-wanted feature can be nearly assembled or scattered — so `D` is reported alongside `CP`, never folded into it. Together they sort candidates into *ripe* (high CP, low D — build now) and *deep* (high CP, high D — real composition work), prioritization a raw backlog cannot give.
+
 **Local-first.** The instrument runs entirely on the user's machine — source code, correction logs, and usage traces never leave it. This is a trust requirement, not just a convenience. The one runtime dependency is the local `typescript` compiler, used to parse JS/TS for capacity; it performs no network access.
 
 ## Roadmap
 
 Capacity and proposal are deliberately seams. Status and planned depth, roughly in order:
 
-1. **Code-aware capacity** — *done for JS/TS*: real identifier extraction via the TypeScript compiler, with a comment/string/keyword-aware text analyzer as the fallback for other languages (`capacity-analyzers.ts`). Next: per-language analyzers (tree-sitter) registered in the same registry; symbol- and import-graph analysis; *integration distance* (how far apart the pieces are) as a secondary observable; declaration-vs-use weighting.
+1. **Code-aware capacity** — *done for JS/TS*: real identifier extraction via the TypeScript compiler, with a comment/string/keyword-aware text analyzer as the fallback for other languages (`capacity-analyzers.ts`). Import-graph analysis and *integration distance* (how far apart the pieces are) are *done* (`graph.ts`, `integration.ts`). Next: per-language analyzers (tree-sitter) registered in the same registry; declaration-vs-use weighting; integration distance for non-JS/TS languages.
 2. **Correction-capture SDK** — a normalized correction schema with a redaction layer, so `corrections.json` is produced from real `before → after` events (incl. agent-session exports) rather than hand-authored.
 3. **Candidate auto-proposal** — *prototyped* (`discover`, `propose.ts`): lexical clustering of corrections into proposed capabilities. Next depth: local-embedding similarity instead of lexical overlap, and joining proposals to the code graph.
 4. **IDE / workbench panel** — surface candidates linked to actual files inside VS Code or a Codex-style workspace ("architectural microscope").

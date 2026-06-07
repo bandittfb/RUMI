@@ -26,6 +26,11 @@ const CODE_EXTENSIONS = new Set([
 
 const IGNORE_DIRS = new Set(["node_modules", ".git", "dist", "build", ".rumi"]);
 
+/** List all scannable code files under a repo root (absolute-or-relative as given). */
+export async function listCodeFiles(repoRoot: string): Promise<string[]> {
+  return walk(repoRoot);
+}
+
 async function walk(dir: string): Promise<string[]> {
   let entries: import("node:fs").Dirent[];
   try {

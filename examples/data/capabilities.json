@@ -22,5 +22,11 @@
     "label": "Audit Log Viewer",
     "description": "Searchable trail of system and user events.",
     "signals": ["auditLog", "eventTrail", "actorId"]
+  },
+  {
+    "id": "weekly-digest",
+    "label": "Weekly Digest",
+    "description": "A scheduled digest that batches notifications into a weekly summary.",
+    "signals": ["buildDigest", "sendNotification"]
   }
 ]

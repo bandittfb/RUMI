@@ -18,6 +18,8 @@ import { aggregateCorrections } from "../fields/correction.js";
 import { scanCapacity } from "../fields/capacity.js";
 import { aggregateUsage } from "../fields/utilization.js";
 import { computeReadings, interpret } from "../core/collapse.js";
+import { buildImportGraph } from "../fields/graph.js";
+import { integrationDistance, integrationLabel } from "../fields/integration.js";
 import type { FieldReading } from "../core/types.js";
 
 const RUMI_DIR = ".rumi";
@@ -70,6 +72,11 @@ export async function runDiscover(opts: DiscoverOptions): Promise<DiscoveryRepor
     capacity: capacityEvidence,
     usage: usageAgg
   });
+
+  const graph = await buildImportGraph(opts.repo);
+  for (const r of readings) {
+    r.integrationDistance = integrationDistance(r.evidence.capacityFiles, graph);
+  }
 
   const signalsById = new Map(proposed.map((p) => [p.def.id, p.def.signals]));
   const membersById = new Map(proposed.map((p) => [p.def.id, p.memberIds]));
@@ -128,6 +135,11 @@ function printDiscovery(report: DiscoveryReport, top: number): void {
     out.write(`      U  utilization     : ${bar(r.utilization)} ${r.utilization.toFixed(3)}  (${uses})\n`);
     if (r.evidence.capacityFiles.length) {
       out.write(`      capacity in        : ${r.evidence.capacityFiles.join(", ")}\n`);
+    }
+    const dLabel = integrationLabel(r.integrationDistance ?? null, r.evidence.capacityFiles.length);
+    if (dLabel) {
+      const d = r.integrationDistance ?? 0;
+      out.write(`      D  integration    : ${bar(d)} ${d.toFixed(3)}  ${dLabel}\n`);
     }
     out.write(`      -> ${interpret(r)}\n`);
   }

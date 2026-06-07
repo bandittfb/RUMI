@@ -2,5 +2,6 @@
   { "capability": "enterprise-renewal-risk", "count": 1 },
   { "capability": "dark-mode", "count": 240 },
   { "capability": "audit-log", "count": 95 },
-  { "capability": "bulk-export", "count": 0 }
+  { "capability": "bulk-export", "count": 0 },
+  { "capability": "weekly-digest", "count": 2 }
 ]

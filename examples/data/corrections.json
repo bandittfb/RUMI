@@ -8,5 +8,9 @@
   { "id": "c7", "capability": "bulk-export", "before": "manual copy", "after": "download all results", "direction": ["toward-export"], "at": "2026-05-10T08:00:00Z" },
   { "id": "c9", "capability": "bulk-export", "before": "copy one page", "after": "export the full result set at once", "direction": ["toward-export"], "at": "2026-05-13T08:00:00Z" },
   { "id": "c10", "capability": "bulk-export", "before": "screenshot the table", "after": "download all rows as CSV", "direction": ["toward-export"], "at": "2026-05-15T08:00:00Z" },
-  { "id": "c8", "capability": "audit-log", "before": "no history", "after": "show who changed what", "direction": ["toward-audit"], "at": "2026-05-06T08:00:00Z" }
+  { "id": "c8", "capability": "audit-log", "before": "no history", "after": "show who changed what", "direction": ["toward-audit"], "at": "2026-05-06T08:00:00Z" },
+  { "id": "c11", "capability": "weekly-digest", "before": "one notification per change", "after": "weekly digest batching notifications", "direction": ["toward-digest"], "at": "2026-05-08T08:00:00Z" },
+  { "id": "c12", "capability": "weekly-digest", "before": "manual summary email", "after": "scheduled weekly digest of notifications", "direction": ["toward-digest"], "at": "2026-05-11T08:00:00Z" },
+  { "id": "c13", "capability": "weekly-digest", "before": "noisy per-event alerts", "after": "batched digest sent weekly", "direction": ["toward-digest"], "at": "2026-05-14T08:00:00Z" },
+  { "id": "c14", "capability": "weekly-digest", "before": "send each notice separately", "after": "build a weekly digest of notices", "direction": ["toward-digest"], "at": "2026-05-16T08:00:00Z" }
 ]

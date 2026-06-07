@@ -77,6 +77,12 @@ export interface FieldReading {
   confidence: number;
   /** Whether utilization was actually observed (vs. absent/unknown). */
   utilizationKnown: boolean;
+  /**
+   * Integration distance D(x) in [0,1]: how far apart the capability's pieces
+   * are in the repo's import graph. A SECONDARY observable (not part of CP) —
+   * 0 = co-located/connected (ripe), →1 = scattered (deep). null = no capacity.
+   */
+  integrationDistance?: number | null;
   /** Supporting evidence carried through for the report. */
   evidence: {
     correctionCount: number;
