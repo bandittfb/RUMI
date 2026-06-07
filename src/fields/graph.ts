@@ -50,13 +50,21 @@ export async function buildImportGraph(repoRoot: string): Promise<ImportGraph> {
       continue;
     }
     const importerRel = path.relative(repoRoot, file);
-    const specs = TS_EXTENSIONS.has(path.extname(file))
-      ? tsImportSpecifiers(file, text)
-      : regexImportSpecifiers(text);
+    const ext = path.extname(file);
 
-    for (const spec of specs) {
-      const targetAbs = resolveSpecifier(file, spec, absToRel);
-      if (!targetAbs) continue;
+    let targetKeys: string[];
+    if (ext === ".py") {
+      targetKeys = pythonImportTargets(text, file, absToRel);
+    } else {
+      const specs = TS_EXTENSIONS.has(ext)
+        ? tsImportSpecifiers(file, text)
+        : regexImportSpecifiers(text);
+      targetKeys = specs
+        .map((s) => resolveSpecifier(file, s, absToRel))
+        .filter((k): k is string => k !== null);
+    }
+
+    for (const targetAbs of targetKeys) {
       const targetRel = absToRel.get(targetAbs);
       if (targetRel) addEdge(importerRel, targetRel);
     }
@@ -94,6 +102,52 @@ function tsImportSpecifiers(fileName: string, text: string): string[] {
   };
   visit(source);
   return specs;
+}
+
+/**
+ * Resolve Python relative imports to repo files (the common intra-package edges).
+ * Handles `from .mod import x`, `from ..pkg.mod import y`, and `from . import a, b`.
+ * Absolute imports (`from app.x import y`) need a package root and are skipped.
+ */
+function pythonImportTargets(
+  text: string,
+  importerAbs: string,
+  absToRel: Map<string, string>
+): string[] {
+  const targets: string[] = [];
+  const importerDir = path.dirname(importerAbs);
+
+  const pushCandidate = (baseDir: string, segments: string[]): void => {
+    if (segments.length === 0) return;
+    const base = path.resolve(baseDir, ...segments);
+    for (const cand of [base + ".py", path.join(base, "__init__.py")]) {
+      const key = norm(cand);
+      if (absToRel.has(key)) {
+        targets.push(key);
+        return;
+      }
+    }
+  };
+
+  for (const m of text.matchAll(/^[ \t]*from[ \t]+(\.+)([A-Za-z0-9_.]*)[ \t]+import[ \t]+(.+)$/gm)) {
+    const dots = m[1].length;
+    const moduleName = m[2];
+    let baseDir = importerDir;
+    for (let i = 1; i < dots; i++) baseDir = path.dirname(baseDir); // each extra dot = up one level
+
+    if (moduleName) {
+      pushCandidate(baseDir, moduleName.split(".").filter(Boolean));
+    } else {
+      // `from . import a, b` — each imported name is a sibling module
+      const names = m[3]
+        .replace(/[()]/g, "")
+        .split(",")
+        .map((s) => s.trim().split(/\s+as\s+/)[0].trim())
+        .filter(Boolean);
+      for (const n of names) pushCandidate(baseDir, [n]);
+    }
+  }
+  return targets;
 }
 
 /** Best-effort relative-import extraction for non-JS/TS languages. */

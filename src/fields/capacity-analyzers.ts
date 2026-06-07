@@ -142,6 +142,45 @@ export const typeScriptAnalyzer: CapacityAnalyzer = {
   }
 };
 
+// ── Rung C: tree-sitter analyzer (any language with a grammar) ───────────────
+
+/**
+ * Build a capacity analyzer over a ready tree-sitter parser (see treesitter.ts).
+ * Collects leaf identifier nodes — `identifier`, `type_identifier`,
+ * `field_identifier`, `property_identifier`, etc. — which across grammars are the
+ * real code symbols. Keywords, comments, and string contents are other node
+ * kinds, so they are excluded just as in the TypeScript analyzer.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function treeSitterAnalyzer(parser: any): CapacityAnalyzer {
+  return {
+    name: "tree-sitter",
+    analyze(text: string): CodeTokens {
+      const tok: CodeTokens = { full: new Set(), parts: new Set() };
+      let tree: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+      try {
+        tree = parser.parse(text);
+      } catch {
+        return tok;
+      }
+      const stack = [tree.rootNode];
+      while (stack.length) {
+        const node = stack.pop();
+        if (!node) continue;
+        if (node.childCount === 0) {
+          if (typeof node.type === "string" && node.type.endsWith("identifier")) {
+            addIdentifier(tok, node.text);
+          }
+        } else {
+          for (let i = 0; i < node.childCount; i++) stack.push(node.child(i));
+        }
+      }
+      tree.delete?.();
+      return tok;
+    }
+  };
+}
+
 // ── Registry ─────────────────────────────────────────────────────────────────
 
 const TS_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);

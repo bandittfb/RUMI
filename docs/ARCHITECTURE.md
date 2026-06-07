@@ -17,7 +17,8 @@ RUMI is structured as a small pipeline: three independent **field engines** feed
 |------|------|
 | `src/fields/correction.ts` | **C(x)** — Rectifier Seed core. Aggregates correction events into pressure (count + directional coherence), and tracks whether direction was tagged at all. |
 | `src/fields/capacity.ts` | **K(x)** — walks the repo and, per file, extracts real code identifiers via a language-aware analyzer, then matches each capability's signals against them. |
-| `src/fields/capacity-analyzers.ts` | Pluggable capacity analyzers + registry: a TypeScript-compiler analyzer for JS/TS, a comment/string-stripping text analyzer as the fallback for every other language. Adding a language = one analyzer + one registry line. |
+| `src/fields/capacity-analyzers.ts` | Pluggable capacity analyzers + registry: a TypeScript-compiler analyzer for JS/TS, a tree-sitter analyzer for any grammar language, a comment/string-stripping text analyzer as the fallback. Adding a language = one entry. |
+| `src/fields/treesitter.ts` | Lazy local loader for `web-tree-sitter` + prebuilt wasm grammars (Python, Go, Ruby, Java, Rust, PHP, C#). Grammars load only for languages the repo actually contains; no native build, no runtime network. |
 | `src/fields/utilization.ts` | **U(x)** — aggregates usage telemetry and tracks which capabilities were *observed*. Absent telemetry is **unknown**, not a confident zero. |
 | `src/fields/propose.ts` | **Capability auto-proposal** — clusters corrections by lexical overlap (single-linkage union-find) and derives capacity signals from recurring tokens. The divining rod's engine. |
 | `src/fields/graph.ts` | Builds the repo's intra-project import graph (TS compiler for JS/TS; relative-path regex otherwise) — the substrate for integration distance. |
@@ -46,7 +47,7 @@ RUMI is structured as a small pipeline: three independent **field engines** feed
 
 Capacity and proposal are deliberately seams. Status and planned depth, roughly in order:
 
-1. **Code-aware capacity** — *done for JS/TS*: real identifier extraction via the TypeScript compiler, with a comment/string/keyword-aware text analyzer as the fallback for other languages (`capacity-analyzers.ts`). Import-graph analysis and *integration distance* (how far apart the pieces are) are *done* (`graph.ts`, `integration.ts`). Next: per-language analyzers (tree-sitter) registered in the same registry; declaration-vs-use weighting; integration distance for non-JS/TS languages.
+1. **Code-aware capacity** — *done for JS/TS*: real identifier extraction via the TypeScript compiler, with a comment/string/keyword-aware text analyzer as the fallback for other languages (`capacity-analyzers.ts`). Import-graph analysis and *integration distance* are *done* (`graph.ts`, `integration.ts`), as is *multi-language capacity* via tree-sitter (`treesitter.ts`: Python, Go, Ruby, Java, Rust, PHP, C#). Import resolution for integration distance is done for JS/TS and Python. Next: import resolution for more languages; declaration-vs-use weighting; symbol-graph (not just file-graph) distance.
 2. **Correction-capture SDK** — a normalized correction schema with a redaction layer, so `corrections.json` is produced from real `before → after` events (incl. agent-session exports) rather than hand-authored.
 3. **Candidate auto-proposal** — *prototyped* (`discover`, `propose.ts`): lexical clustering of corrections into proposed capabilities. Next depth: local-embedding similarity instead of lexical overlap, and joining proposals to the code graph.
 4. **IDE / workbench panel** — surface candidates linked to actual files inside VS Code or a Codex-style workspace ("architectural microscope").

@@ -154,6 +154,8 @@ Plus a target repo, scanned locally for capacity signals. **Nothing is uploaded.
 
 ## Status
 
-`0.4.0` — working instrument: three-field engine, scan-independent Collapse Potential with per-reading **confidence** (unknown utilization is never mistaken for confirmed-unused), **code-aware capacity** (JS/TS parsed with the TypeScript compiler; a comment/string/keyword-aware analyzer for every other language), **integration distance** (a second observable ranking candidates ripe vs. deep from the repo's import graph), CLI, local dashboard, baseline/compare, and **emergent capability discovery** (`discover`) — the instrument can propose undeclared capabilities from the correction field alone.
+`0.5.0` — working instrument: three-field engine, scan-independent Collapse Potential with per-reading **confidence** (unknown utilization is never mistaken for confirmed-unused), **code-aware capacity across many languages** (JS/TS via the TypeScript compiler; Python, Go, Ruby, Java, Rust, PHP, C# via tree-sitter; a comment/string/keyword-aware text analyzer as the fallback — a signal in a comment never counts as code), **integration distance** (a second observable ranking candidates ripe vs. deep from the repo's import graph; JS/TS and Python imports resolved), CLI, local dashboard, baseline/compare, and **emergent capability discovery** (`discover`) — the instrument can propose undeclared capabilities from the correction field alone.
 
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the design and roadmap. Next depth: per-language (tree-sitter) capacity analyzers, local-embedding clustering for `discover`, correction-capture SDK, VS Code panel, recursive / Level-3 analysis.
+All parsing is local: tree-sitter runs on prebuilt wasm grammars shipped on disk — nothing touches the network at run time.
+
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the design and roadmap. Next depth: meaning-based clustering for `discover`, import resolution for more languages, correction-capture SDK, VS Code panel, recursive / Level-3 analysis.

@@ -15,9 +15,12 @@ import path from "node:path";
 import type { CapabilityDef, CapacityEvidence } from "../core/types.js";
 import {
   analyzerForExtension,
+  treeSitterAnalyzer,
   signalMatches,
+  type CapacityAnalyzer,
   type CodeTokens
 } from "./capacity-analyzers.js";
+import { treeSitterLangForExt, makeParser } from "./treesitter.js";
 
 const CODE_EXTENSIONS = new Set([
   ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs",
@@ -29,6 +32,26 @@ const IGNORE_DIRS = new Set(["node_modules", ".git", "dist", "build", ".rumi"]);
 /** List all scannable code files under a repo root (absolute-or-relative as given). */
 export async function listCodeFiles(repoRoot: string): Promise<string[]> {
   return walk(repoRoot);
+}
+
+/**
+ * Pick an analyzer per extension present in the repo, loading tree-sitter
+ * grammars only for languages that actually appear. A language whose grammar
+ * fails to load degrades to the text analyzer rather than failing the scan.
+ */
+async function prepareAnalyzers(files: string[]): Promise<Map<string, CapacityAnalyzer>> {
+  const extensions = new Set(files.map((f) => path.extname(f)));
+  const map = new Map<string, CapacityAnalyzer>();
+  for (const ext of extensions) {
+    const lang = treeSitterLangForExt(ext);
+    if (lang) {
+      const parser = await makeParser(lang);
+      map.set(ext, parser ? treeSitterAnalyzer(parser) : analyzerForExtension(ext));
+    } else {
+      map.set(ext, analyzerForExtension(ext)); // TypeScript compiler for JS/TS, text otherwise
+    }
+  }
+  return map;
 }
 
 async function walk(dir: string): Promise<string[]> {
@@ -56,14 +79,16 @@ export async function scanCapacity(
   capabilities: CapabilityDef[]
 ): Promise<Record<string, CapacityEvidence>> {
   const files = await walk(repoRoot);
+  const analyzers = await prepareAnalyzers(files);
 
   // Analyze each file once into its real code tokens, with the analyzer chosen
-  // by language. This is the seam where a deeper per-language analyzer plugs in.
+  // by language: TypeScript compiler for JS/TS, tree-sitter for languages with a
+  // grammar, comment/string-stripping text analyzer otherwise.
   const tokensByFile = new Map<string, CodeTokens>();
   for (const file of files) {
     try {
       const text = await fs.readFile(file, "utf8");
-      const analyzer = analyzerForExtension(path.extname(file));
+      const analyzer = analyzers.get(path.extname(file)) ?? analyzerForExtension(path.extname(file));
       tokensByFile.set(path.relative(repoRoot, file), analyzer.analyze(text, file));
     } catch {
       /* skip unreadable */
