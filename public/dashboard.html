@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RUMI — Latent Affordance Observatory</title>
+<style>
+  :root {
+    --bg: #0e1116; --panel: #161b22; --line: #232a33;
+    --text: #e6edf3; --muted: #8b949e;
+    --c: #4cc9f0; --k: #b5e48c; --u: #f4978e; --cp: #ffd166;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  header { padding: 22px 28px; border-bottom: 1px solid var(--line); }
+  h1 { margin: 0; font-size: 18px; letter-spacing: .04em; }
+  .sub { color: var(--muted); margin-top: 4px; font-size: 12px; }
+  main { padding: 20px 28px; max-width: 1000px; }
+  .card { background: var(--panel); border: 1px solid var(--line);
+    border-radius: 10px; padding: 16px 18px; margin-bottom: 14px; }
+  .card h2 { margin: 0 0 2px; font-size: 15px; }
+  .cap { color: var(--muted); font-size: 12px; }
+  .row { display: grid; grid-template-columns: 140px 1fr 130px; align-items: center;
+    gap: 10px; margin: 7px 0; }
+  .label { color: var(--muted); font-size: 12px; }
+  .track { background: #0b0e13; border-radius: 6px; height: 14px; overflow: hidden;
+    border: 1px solid var(--line); }
+  .fill { height: 100%; }
+  .fill.c { background: var(--c); } .fill.k { background: var(--k); }
+  .fill.u { background: var(--u); } .fill.cp { background: var(--cp); }
+  .num { text-align: right; color: var(--text); font-size: 12px; }
+  .meta { color: var(--muted); font-size: 11px; }
+  .interp { margin-top: 10px; padding: 8px 10px; border-left: 3px solid var(--cp);
+    background: #1b212b; border-radius: 4px; font-size: 12px; }
+  details { margin-top: 8px; } summary { cursor: pointer; color: var(--muted); font-size: 12px; }
+  .files { margin: 6px 0 0; padding-left: 16px; color: var(--muted); font-size: 11px; }
+  .empty { color: var(--muted); }
+  .rank { color: var(--cp); font-weight: bold; }
+</style>
+</head>
+<body>
+<header>
+  <h1>RUMI · Revealed Uncollapsed Manifold Instrument</h1>
+  <div class="sub" id="sub">loading…</div>
+</header>
+<main id="app"></main>
+<script>
+function bar(cls, v) {
+  return `<div class="track"><div class="fill ${cls}" style="width:${Math.round(v*100)}%"></div></div>`;
+}
+function row(label, cls, v, meta) {
+  return `<div class="row"><span class="label">${label}</span>${bar(cls,v)}`
+    + `<span class="num">${v.toFixed(3)}${meta?` · ${meta}`:""}</span></div>`;
+}
+async function load() {
+  const app = document.getElementById('app');
+  const sub = document.getElementById('sub');
+  let report;
+  try { report = await (await fetch('/api/report')).json(); }
+  catch { sub.textContent = 'No report available.'; return; }
+  if (report.error) { sub.textContent = report.error; return; }
+  sub.textContent = `repo ${report.repo} · ${report.capabilityCount} capabilities · generated ${new Date(report.generatedAt).toLocaleString()}`;
+  app.innerHTML = report.readings.map((r, i) => {
+    const e = r.evidence;
+    const files = e.capacityFiles.length
+      ? `<ul class="files">${e.capacityFiles.map(f=>`<li>${f}</li>`).join('')}</ul>`
+      : `<div class="empty">no capacity files matched</div>`;
+    return `<div class="card">
+      <h2><span class="rank">#${i+1}</span> ${r.label} <span class="cap">[${r.capability}]</span></h2>
+      ${row('Collapse Potential','cp',r.collapsePotential,'')}
+      ${row('C correction','c',r.correction, e.correctionCount+' ev, coh '+e.directionCoherence)}
+      ${row('K capacity','k',r.capacity, e.matchedSignals.length+' sig, '+e.capacityFiles.length+' files')}
+      ${row('U utilization','u',r.utilization, e.usageCount+' uses')}
+      <div class="interp">${interpret(r)}</div>
+      <details><summary>capacity evidence</summary>${files}
+        <div class="meta">signals: ${e.matchedSignals.join(', ')||'—'}</div></details>
+    </div>`;
+  }).join('');
+}
+function interpret(r){
+  const hi=x=>x>=0.6, lo=x=>x<=0.34;
+  if(hi(r.correction)&&hi(r.capacity)&&lo(r.utilization)) return "Uncollapsed feature: strong correction pressure meets latent capacity that is barely used.";
+  if(hi(r.correction)&&lo(r.capacity)) return "Unsupported wish: users push toward this, but the code does not yet support it.";
+  if(hi(r.capacity)&&lo(r.correction)&&lo(r.utilization)) return "Dormant capacity: the code supports it, but nobody is asking for it.";
+  if(hi(r.utilization)) return "Already collapsed: this capability is realized and in active use.";
+  return "Low signal: no strong collapse pressure in this region.";
+}
+load();
+</script>
+</body>
+</html>

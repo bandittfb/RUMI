@@ -1,0 +1,12 @@
+[
+  { "id": "c1", "capability": "enterprise-renewal-risk", "before": "generic customer summary", "after": "renewal-risk report with blockers and owners", "direction": ["toward-renewal-risk"], "at": "2026-05-02T10:11:00Z" },
+  { "id": "c2", "capability": "enterprise-renewal-risk", "before": "account overview", "after": "at-risk renewals grouped by segment", "direction": ["toward-renewal-risk"], "at": "2026-05-04T14:22:00Z" },
+  { "id": "c3", "capability": "enterprise-renewal-risk", "before": "report without owners", "after": "report with owner routing and blockers", "direction": ["toward-renewal-risk"], "at": "2026-05-07T09:03:00Z" },
+  { "id": "c4", "capability": "enterprise-renewal-risk", "before": "list of accounts", "after": "renewal date + risk score per enterprise account", "direction": ["toward-renewal-risk"], "at": "2026-05-09T16:40:00Z" },
+  { "id": "c5", "capability": "enterprise-renewal-risk", "before": "plain summary", "after": "renewal-risk workflow view", "direction": ["toward-renewal-risk"], "at": "2026-05-12T11:15:00Z" },
+  { "id": "c6", "capability": "bulk-export", "before": "single row copy", "after": "export everything to CSV", "direction": ["toward-export"], "at": "2026-05-03T08:00:00Z" },
+  { "id": "c7", "capability": "bulk-export", "before": "manual copy", "after": "download all results", "direction": ["toward-export"], "at": "2026-05-10T08:00:00Z" },
+  { "id": "c9", "capability": "bulk-export", "before": "copy one page", "after": "export the full result set at once", "direction": ["toward-export"], "at": "2026-05-13T08:00:00Z" },
+  { "id": "c10", "capability": "bulk-export", "before": "screenshot the table", "after": "download all rows as CSV", "direction": ["toward-export"], "at": "2026-05-15T08:00:00Z" },
+  { "id": "c8", "capability": "audit-log", "before": "no history", "after": "show who changed what", "direction": ["toward-audit"], "at": "2026-05-06T08:00:00Z" }
+]

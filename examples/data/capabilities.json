@@ -1,0 +1,26 @@
+[
+  {
+    "id": "enterprise-renewal-risk",
+    "label": "Enterprise Renewal Risk Review",
+    "description": "A workflow that surfaces at-risk enterprise renewals with blockers and owners.",
+    "signals": ["segmentation", "renewalDate", "riskScore", "reportBuilder", "ownerRouting", "blockers"]
+  },
+  {
+    "id": "bulk-export",
+    "label": "Bulk Data Export",
+    "description": "Export large result sets to CSV in one action.",
+    "signals": ["exportCsv", "batchExport", "downloadAll"]
+  },
+  {
+    "id": "dark-mode",
+    "label": "Dark Mode Theming",
+    "description": "User-selectable dark color theme.",
+    "signals": ["themeToken", "darkMode", "colorScheme"]
+  },
+  {
+    "id": "audit-log",
+    "label": "Audit Log Viewer",
+    "description": "Searchable trail of system and user events.",
+    "signals": ["auditLog", "eventTrail", "actorId"]
+  }
+]
