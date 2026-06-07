@@ -185,6 +185,32 @@ on `cHalf`, how much correction volume RUMI requires to call pressure "high".
 It is RUMI's own thesis — examine the field a selection displaces — applied to
 RUMI's own selection, yielding a meta-confidence no single reading can.
 
+### Level-3: does the recursion converge?
+
+The Level-2 verdict itself depends on how the reflection was configured — how
+widely the knobs are perturbed, how fine the grid. `reflect --level 3` sweeps
+that reflection-design space (perturbation radius × granularity) and asks the
+terminus question: does the stability estimate hold, or is *it* an artifact too?
+
+```bash
+npm run reflect -- --level 3
+```
+
+On the example the recursion reaches a **split fixed point**:
+
+```
+RANKING        CONVERGES — renewal-risk is RUMI's #1 pick in 100% of every
+               reflection design. A true fixed point.
+CLASSIFICATION does NOT converge — its 'feature' label spans 44%–100% as RUMI's
+               self-perturbation widens (Level-2 reported a single 70%).
+```
+
+That is the honest terminus: the trustworthy invariant is the **ranking**; the
+single "70%" feature-stability figure was itself partly an artifact of how RUMI
+was set to reflect. Level-3 is precisely where that becomes visible — and where
+the recursion stops, because a Level-4 sweep would only keep re-measuring an
+already-proven-unstable quantity. Looking *was* the only way to know.
+
 ## Inputs
 
 RUMI reads a data directory containing:
@@ -197,7 +223,7 @@ Plus a target repo, scanned locally for capacity signals. **Nothing is uploaded.
 
 ## Status
 
-`0.8.0` — working instrument: three-field engine, scan-independent Collapse Potential with per-reading **confidence** (unknown utilization is never mistaken for confirmed-unused), **code-aware capacity across many languages** (JS/TS via the TypeScript compiler; Python, Go, Ruby, Java, Rust, PHP, C# via tree-sitter; a comment/string/keyword-aware text analyzer as the fallback — a signal in a comment never counts as code), **integration distance** (a second observable ranking candidates ripe vs. deep from the symbol reference graph, with the file import graph as fallback), **emergent capability discovery** (`discover`) with **distributional clustering** — proposing undeclared capabilities from the correction field alone, grouping demand that shares no surface words — and **Level-2 reflection** (`reflect`), RUMI turning its instrument on itself to tell robust discoveries from artifacts of its own tuning. Plus a CLI, local dashboard, and baseline/compare.
+`0.9.0` — working instrument: three-field engine, scan-independent Collapse Potential with per-reading **confidence** (unknown utilization is never mistaken for confirmed-unused), **code-aware capacity across many languages** (JS/TS via the TypeScript compiler; Python, Go, Ruby, Java, Rust, PHP, C# via tree-sitter; a comment/string/keyword-aware text analyzer as the fallback — a signal in a comment never counts as code), **integration distance** (a second observable ranking candidates ripe vs. deep from the symbol reference graph, with the file import graph as fallback), **emergent capability discovery** (`discover`) with **distributional clustering** — proposing undeclared capabilities from the correction field alone, grouping demand that shares no surface words — and **recursive reflection** (`reflect`, `reflect --level 3`), RUMI turning its instrument on itself to tell robust discoveries from artifacts of its own tuning — and testing whether that judgement itself converges. Plus a CLI, local dashboard, and baseline/compare.
 
 All parsing is local: tree-sitter runs on prebuilt wasm grammars shipped on disk — nothing touches the network at run time.
 

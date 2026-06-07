@@ -49,7 +49,7 @@ RUMI — Revealed Uncollapsed Manifold Instrument
 Usage:
   rumi scan       --repo <dir> --data <dir> [--json] [--top N]
   rumi discover   --repo <dir> --data <dir> [--json] [--top N]
-  rumi reflect    --repo <dir> --data <dir> [--json] [--top N]
+  rumi reflect    --repo <dir> --data <dir> [--json] [--top N] [--level 2|3]
   rumi dashboard  [--port 4317]
   rumi experiment baseline --repo <dir> --data <dir>
   rumi experiment compare  --repo <dir> --data <dir>
@@ -92,7 +92,8 @@ async function main(): Promise<void> {
         repo,
         data,
         json: Boolean(flags.json),
-        top: flags.top ? Number(flags.top) : 10
+        top: flags.top ? Number(flags.top) : 10,
+        level: flags.level ? Number(flags.level) : 2
       });
       break;
     case "dashboard":
