@@ -31,7 +31,7 @@ But a causal benchmark ([`docs/worldforge.md`] / WorldForge v2 — synthetic wor
 Collapse Score   S(x) = C(x) · confidence(x) · (1 − U(x))
 ```
 
-Capacity isn't discarded — it survives inside **confidence** (a capability with no matching code has `capacityConfidence = 0`, so unsupported wishes still score zero). It just no longer acts as a magnitude gate. This beat `C·K·(1−U)` across all 8 noise regimes; a *learned* combiner does better still, so the long arc is to learn the weighting. **This is synthetic-validated; validation on a real correction stream is pending** — `CP` is retained alongside `S` so the change is transparent and reversible.
+Capacity isn't discarded — it survives inside **confidence** (a capability with no matching code has `capacityConfidence = 0`, so unsupported wishes still score zero). It just no longer acts as a magnitude gate. Across the full noise space swept, `S` **weakly dominates** `C·K·(1−U)`: it is *never worse* (the two tie only when capacity is a perfect, noise-free proxy — the gate doesn't help even then) and *strictly better* under any realistic noise, by the widest margin exactly where capacity is a poor proxy for buildability. A *learned* combiner does better still, so the long arc is to learn the weighting. **This is synthetic-validated; validation on a real correction stream is pending** — `CP` is retained alongside `S` so the change is transparent and reversible.
 
 The qualitative regions are unchanged — high corrections alone is an *unsupported wish*, high capacity alone is *dormant code*, low usage alone is nobody-wants-it — and the intersection is still where an **uncollapsed feature** lives.
 
