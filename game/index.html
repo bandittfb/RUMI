@@ -8,7 +8,7 @@
   :root{
     --bg:#0a0c10; --bg2:#0e1116; --panel:#141a22; --line:#222b36;
     --text:#e6edf3; --muted:#7d8794;
-    --fill:#ffd166; --fillglow:#ffb703; --void:#1a2029; --unk:#1d2530;
+    --fill:#ffd166; --fillglow:#ffb703; --void:#0f141b; --unk:#232f3e;
     --cyan:#4cc9f0; --violet:#c792ea; --green:#3fb950; --red:#f4978e;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
@@ -32,9 +32,11 @@
     box-shadow:0 30px 80px -30px #000, inset 0 0 60px -20px #000;}
   .cell{width:var(--cs);height:var(--cs);border-radius:6px;display:flex;align-items:center;justify-content:center;
     font-size:calc(var(--cs)*.42);font-weight:700;cursor:pointer;position:relative;user-select:none;
-    background:var(--unk);color:#56627a;border:1px solid #232d3a;transition:transform .12s, background .25s, box-shadow .25s, color .2s;}
-  .cell:hover{transform:translateY(-1px);border-color:#3a4756;}
-  .cell.void{background:var(--void);color:#3c4656;border-color:#1a222c;}
+    background:var(--unk);color:#8a98ab;border:1px solid #2f3c4d;transition:transform .12s, background .25s, box-shadow .25s, color .2s;}
+  .cell:not(.fill):not(.void):hover{transform:translateY(-1px);border-color:var(--cyan);}
+  .cell.void{background:var(--void);color:#5c7185;border-color:#161d26;cursor:default;box-shadow:inset 0 0 9px -4px #000;}
+  .cell.fill,.cell.void{cursor:default;}
+  .cell.fill:hover,.cell.void:hover{transform:none;}
   .cell.fill{background:linear-gradient(160deg,var(--fill),var(--fillglow));color:#3a2c00;
     border-color:#ffe39a;box-shadow:0 0 14px -2px var(--fillglow), inset 0 0 10px -4px #fff;}
   .cell.clue{color:#9fb0c4;}
@@ -160,6 +162,7 @@
         </div>
         <p><b style="color:var(--fill)">How to play:</b> <span class="key">click</span> a square to mark it <b style="color:var(--fill)">filled ◆</b> · <span class="key">right-click</span> to mark it <b style="color:var(--cyan)">empty ◇</b> (or pick a tool below, then click). Get a square right and the numbers around it <b style="color:var(--cyan)">chain-react</b>, auto-solving their neighbours. Get one wrong and you lose a little <b>stability</b> (top-right).</p>
         <p style="color:var(--muted);font-size:11.5px;margin:8px 0 2px">Stuck? A <b style="color:var(--cyan)">cyan-glowing</b> number always has a guaranteed move — start there. <b>Hover</b> any number to see its math. Or press <b>💡 hint</b>.</p>
+        <div style="text-align:center;margin:4px 0 10px"><button class="ghost" id="resumeBtn" style="display:none;color:var(--cyan)">↩ resume current game</button></div>
         <div class="modes" id="modes"></div>
         <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:6px" id="dailyline"></div>
       </div>
@@ -257,7 +260,7 @@ function generate(n, keepProb, rng){
 }
 
 // ─────────────────────────── game state ──────────────────────────────────
-let score=0, keystones=0, maxCascade=0, stability=3, tool=FILL, solving=false, won=false, assist=true;
+let score=0, keystones=0, maxCascade=0, stability=3, tool=FILL, solving=false, won=false, assist=true, firstCascadeDone=false;
 let cascadeMap=[]; // which keystone-index resolved each cell, for the share grid
 const $=id=>document.getElementById(id);
 const boardEl=$('board');
@@ -270,7 +273,7 @@ function startGame(mode, diff){
   generate(cfg.n,cfg.k,rng);
   state=Array.from({length:N},()=>Array(N).fill(UNK));
   cascadeMap=Array.from({length:N},()=>Array(N).fill(-1));
-  score=0;keystones=0;maxCascade=0;stability=3;won=false;solving=false;
+  score=0;keystones=0;maxCascade=0;stability=3;won=false;solving=false;firstCascadeDone=false;
   curMode={mode,diff,seed};
   renderBoard(); renderHud();
   $('title').classList.add('hide'); $('win').classList.add('hide');
@@ -294,7 +297,9 @@ function renderBoard(){
   markForced();
 }
 function cellEl(r,c){return boardEl.children[r*N+c];}
-function paint(r,c){const el=cellEl(r,c);el.classList.remove('fill','void');if(state[r][c]===FILL)el.classList.add('fill');else if(state[r][c]===VOID)el.classList.add('void');}
+function paint(r,c){const el=cellEl(r,c);el.classList.remove('fill','void');
+  if(state[r][c]===FILL)el.classList.add('fill');else if(state[r][c]===VOID)el.classList.add('void');
+  if(clue[r][c]===null)el.textContent = state[r][c]===VOID?'◇':(state[r][c]===FILL?'◆':'');}
 function paintAll(){for(let r=0;r<N;r++)for(let c=0;c<N;c++)paint(r,c);}
 function renderHud(){
   $('score').textContent=score.toLocaleString();
@@ -344,9 +349,9 @@ boardEl.addEventListener('contextmenu',e=>e.preventDefault());
 boardEl.addEventListener('mousedown',e=>{
   const t=e.target.closest('.cell'); if(!t||solving||won)return;
   const r=+t.dataset.r,c=+t.dataset.c;
-  if(state[r][c]!==UNK)return;
-  const want = e.button===2 ? VOID : (e.button===0 ? FILL : VOID);
-  attempt(r,c, e.button===1?tool:want);
+  if(state[r][c]!==UNK){$('hint').textContent='That square is already solved — pick a lighter (unsolved) square.';return;}
+  const want = e.button===2 ? VOID : tool;   // right-click = quick Empty; otherwise the selected tool
+  attempt(r,c,want);
 });
 // touch / tool-based for mobile
 boardEl.addEventListener('click',e=>{
@@ -365,7 +370,7 @@ function attempt(r,c,want){
   if(want!==correct){ // wrong deduction → fizzle
     const el=cellEl(r,c); el.classList.add('bad'); setTimeout(()=>el.classList.remove('bad'),420);
     stability=Math.max(0,stability-1); blip(140,.08,'sawtooth'); renderHud();
-    if(stability===0){/* soft: keep playing, rating will reflect */}
+    $('hint').innerHTML='✗ wrong — that square isn\'t '+(want===FILL?'filled':'empty')+'. Re-check the numbers touching it. <span style="color:var(--red)">−1 stability</span>';
     return;
   }
   solving=true;
@@ -379,9 +384,13 @@ function attempt(r,c,want){
   let total=1; // include the keystone
   animateWaves(waves, ()=>{
     for(const w of waves) total+=w.length;
-    if(total-1>maxCascade)maxCascade=total-1;
-    if(total>=8){ showCombo('PERCOLATION ×'+(total-1)); score+=total*15; flash(); }
-    keystones && (function(){})();
+    const chain=total-1;
+    if(chain>maxCascade)maxCascade=chain;
+    if(total>=8){ showCombo('PERCOLATION ×'+chain); score+=total*15; flash(); }
+    if(chain>=2 && !firstCascadeDone){firstCascadeDone=true;
+      $('hint').innerHTML='⚡ <b style="color:var(--cyan)">Chain reaction!</b> Your move satisfied nearby numbers, so they auto-solved their own squares. Bigger chains = more points.';}
+    else if(chain>=2){$('hint').innerHTML='⚡ chain reaction — <b>'+chain+'</b> squares auto-solved.';}
+    else if(chain===0){$('hint').textContent='Solved 1 square. Look for a glowing number to trigger a chain.';}
     renderHud();
     markForced();
     solving=false;
@@ -492,7 +501,9 @@ $('tFill').onclick=()=>{tool=FILL;$('tFill').classList.add('on');$('tVoid').clas
 $('tVoid').onclick=()=>{tool=VOID;$('tVoid').classList.add('on');$('tFill').classList.remove('on');};
 $('hintBtn').onclick=hint;
 $('assistBtn').onclick=()=>{assist=!assist;$('assistBtn').textContent='assist: '+(assist?'on':'off');markForced();};
-$('menuBtn').onclick=()=>$('title').classList.remove('hide');
+$('menuBtn').onclick=()=>{$('resumeBtn').style.display=(state.length&&!won)?'inline-block':'none';$('title').classList.remove('hide');};
+$('resumeBtn').onclick=()=>$('title').classList.add('hide');
+window.addEventListener('keydown',e=>{if(e.key==='Escape'&&state.length&&!won&&!$('title').classList.contains('hide'))$('title').classList.add('hide');});
 window.addEventListener('resize',()=>{if(state.length)renderBoard();});
 
 function buildMenu(){
