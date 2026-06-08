@@ -266,7 +266,7 @@ const $=id=>document.getElementById(id);
 const boardEl=$('board');
 
 function startGame(mode, diff){
-  const cfg={easy:{n:8,k:.72},medium:{n:11,k:.58},hard:{n:14,k:.46}}[diff];
+  const cfg={learn:{n:5,k:.85},easy:{n:6,k:.74},medium:{n:8,k:.64},hard:{n:11,k:.52}}[diff];
   const seed = mode==='daily' ? 'daily-'+new Date().toISOString().slice(0,10)+'-'+diff
                               : 'free-'+Math.floor(Math.random()*1e9)+'-'+diff;
   const rng=rngFrom(seed);
@@ -509,10 +509,11 @@ window.addEventListener('resize',()=>{if(state.length)renderBoard();});
 function buildMenu(){
   const m=$('modes');m.innerHTML='';
   const opts=[
-    ['daily','medium','Daily Manifold','one shared puzzle · everyone gets the same'],
-    ['free','easy','Free · Easy','8×8 · gentle warm-up'],
-    ['free','medium','Free · Medium','11×11 · the standard collapse'],
-    ['free','hard','Free · Hard','14×14 · deep cascades, sparse clues'],
+    ['free','learn','Learn · 5×5','a tiny board to learn the rules'],
+    ['free','easy','Easy · 6×6','small and gentle'],
+    ['free','medium','Medium · 8×8','the standard board'],
+    ['free','hard','Hard · 11×11','big board, long chains'],
+    ['daily','medium','Daily Puzzle','one shared 8×8 — same for everyone today'],
   ];
   for(const[mode,diff,name,desc]of opts){
     const b=document.createElement('button');
