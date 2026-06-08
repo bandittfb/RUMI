@@ -46,6 +46,28 @@
   @keyframes pop{0%{transform:scale(.4);}60%{transform:scale(1.18);}100%{transform:scale(1);}}
   @keyframes ring{from{transform:scale(.7);opacity:.9;}to{transform:scale(1.5);opacity:0;}}
   @keyframes bad{0%,100%{transform:translateX(0);}20%{transform:translateX(-5px);}40%{transform:translateX(5px);}60%{transform:translateX(-3px);}80%{transform:translateX(3px);}}
+  /* legibility aids */
+  .cell.hl{outline:2px solid var(--cyan);outline-offset:-2px;z-index:3;}
+  .cell.hlc{outline:2px dashed var(--violet);outline-offset:-2px;z-index:4;}
+  .cell.forced{animation:forced 1.5s ease-in-out infinite;}
+  @keyframes forced{0%,100%{box-shadow:0 0 0 0 rgba(76,201,240,0);border-color:#232d3a;}50%{box-shadow:0 0 13px 1px rgba(76,201,240,.65);border-color:var(--cyan);}}
+  .cell.fill.forced,.cell.void.forced{animation:none;}
+  .cell.hintflash{animation:hintf .7s ease-out 3;}
+  @keyframes hintf{0%,100%{box-shadow:0 0 0 0 rgba(63,185,80,0);}50%{box-shadow:0 0 20px 4px var(--green);border-color:var(--green);}}
+  #tip{position:fixed;pointer-events:none;background:#0a0e14;border:1px solid var(--line);border-radius:9px;
+    padding:8px 11px;font-size:11.5px;color:#c9d4e0;z-index:40;opacity:0;transition:opacity .08s;max-width:210px;line-height:1.4;box-shadow:0 10px 30px -8px #000;}
+  #tip b{color:var(--fill);}#tip .vd{color:var(--cyan);}
+  /* how-to example diagrams */
+  .eg{display:flex;gap:22px;justify-content:center;align-items:center;margin:14px 0;flex-wrap:wrap;}
+  .egcol{text-align:center;}
+  .egrid{display:grid;grid-template-columns:repeat(3,20px);gap:2px;margin:0 auto 6px;}
+  .ec{width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;}
+  .ec.e{background:var(--void);color:#3c4656;border:1px solid #1a222c;}
+  .ec.f{background:linear-gradient(160deg,var(--fill),var(--fillglow));color:#3a2c00;box-shadow:0 0 8px -2px var(--fillglow);}
+  .ec.n{outline:2px solid var(--cyan);outline-offset:-2px;}
+  .egcap{font-size:11px;color:var(--muted);}.egcap b{color:var(--text);}
+  .goalbar{background:linear-gradient(90deg,rgba(76,201,240,.12),transparent);border-left:3px solid var(--cyan);
+    border-radius:6px;padding:9px 12px;margin:4px 0 12px;font-size:12.5px;color:#dbe4ee;}
   #combo{position:absolute;top:-6px;left:50%;transform:translateX(-50%) scale(.6);opacity:0;pointer-events:none;
     font-size:30px;font-weight:800;color:var(--cyan);text-shadow:0 0 22px var(--cyan);letter-spacing:.04em;z-index:5;}
   #combo.show{animation:comboPulse .6s ease-out;}
@@ -92,10 +114,10 @@
 <body>
 <div id="app">
   <header>
-    <div><div class="brand">RUMI · <b>COLLAPSE</b></div><div class="sub" id="modeline">collapse the manifold by deduction</div></div>
+    <div><div class="brand">RUMI · <b>COLLAPSE</b></div><div class="sub" id="modeline">solve the grid using the number clues</div></div>
     <div class="hud">
       <div class="stat"><div class="n" id="score">0</div><div class="l">score</div></div>
-      <div class="stat"><div class="n" id="keys">0</div><div class="l">keystones</div></div>
+      <div class="stat"><div class="n" id="keys">0</div><div class="l">moves</div></div>
       <div class="stat"><div class="n" id="maxc">0</div><div class="l">max cascade</div></div>
       <div class="stat"><div class="l" style="margin-bottom:5px">stability</div><div class="stab" id="stab"></div></div>
     </div>
@@ -110,19 +132,34 @@
     <div class="overlay" id="title">
       <div class="card">
         <h1>RUMI · <b>COLLAPSE</b></h1>
-        <div class="tag">a deduction game where your inference detonates</div>
-        <p>Every cell hides a state: <b style="color:var(--fill)">live</b> or <span style="color:var(--cyan)">void</span>.
-        A number is a <b>clue</b> — how many of the nine cells in its 3×3 block are <b style="color:var(--fill)">live</b>
-        (the clue's own cell counts).</p>
-        <p>Deduce a cell, then <b>collapse</b> it. A correct collapse <b style="color:var(--cyan)">cascades</b> —
-        forcing its neighbours, which force theirs — a chain reaction of pure logic. The art is finding the
-        <b>keystone</b>: the one cell whose collapse detonates the furthest.</p>
-        <div class="legend" style="margin:12px 0">
-          <span><span class="sw" style="background:linear-gradient(160deg,var(--fill),var(--fillglow))"></span>live</span>
-          <span><span class="sw" style="background:var(--void)"></span>void</span>
-          <span><span class="sw" style="background:var(--unk)"></span>unknown</span>
-          <span><span class="key">L-click</span> set live · <span class="key">R-click</span> set void</span>
+        <div class="tag">a logic puzzle — solve the grid with the number clues</div>
+        <div class="goalbar"><b style="color:var(--fill)">Goal:</b> every square is secretly <b style="color:var(--fill)">filled</b> or <b style="color:var(--cyan)">empty</b>. Work out every square using the numbers — solve the whole grid to win.</div>
+        <p><b style="color:var(--fill)">The only rule:</b> a number tells you how many of the <b>9 squares</b> around it — its own cell <i>plus the 8 touching it</i> — are <b style="color:var(--fill)">filled</b>.</p>
+        <div class="eg">
+          <div class="egcol">
+            <div class="egrid">
+              <span class="ec e"></span><span class="ec e"></span><span class="ec e"></span>
+              <span class="ec e"></span><span class="ec e n">0</span><span class="ec e"></span>
+              <span class="ec e"></span><span class="ec e"></span><span class="ec e"></span></div>
+            <div class="egcap">a <b>0</b> → all 9 are <b>empty</b></div>
+          </div>
+          <div class="egcol">
+            <div class="egrid">
+              <span class="ec f"></span><span class="ec f"></span><span class="ec f"></span>
+              <span class="ec f"></span><span class="ec f n">9</span><span class="ec f"></span>
+              <span class="ec f"></span><span class="ec f"></span><span class="ec f"></span></div>
+            <div class="egcap">a <b>9</b> → all 9 are <b>filled</b></div>
+          </div>
+          <div class="egcol">
+            <div class="egrid">
+              <span class="ec f"></span><span class="ec e"></span><span class="ec e"></span>
+              <span class="ec f"></span><span class="ec f n">4</span><span class="ec e"></span>
+              <span class="ec e"></span><span class="ec f"></span><span class="ec e"></span></div>
+            <div class="egcap">a <b>4</b> → exactly 4 filled</div>
+          </div>
         </div>
+        <p><b style="color:var(--fill)">How to play:</b> <span class="key">click</span> a square to mark it <b style="color:var(--fill)">filled ◆</b> · <span class="key">right-click</span> to mark it <b style="color:var(--cyan)">empty ◇</b> (or pick a tool below, then click). Get a square right and the numbers around it <b style="color:var(--cyan)">chain-react</b>, auto-solving their neighbours. Get one wrong and you lose a little <b>stability</b> (top-right).</p>
+        <p style="color:var(--muted);font-size:11.5px;margin:8px 0 2px">Stuck? A <b style="color:var(--cyan)">cyan-glowing</b> number always has a guaranteed move — start there. <b>Hover</b> any number to see its math. Or press <b>💡 hint</b>.</p>
         <div class="modes" id="modes"></div>
         <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:6px" id="dailyline"></div>
       </div>
@@ -130,12 +167,12 @@
     <!-- WIN -->
     <div class="overlay hide" id="win">
       <div class="card">
-        <h1 id="wintitle">MANIFOLD <b>COLLAPSED</b></h1>
+        <h1 id="wintitle">GRID <b>SOLVED</b></h1>
         <div class="tag" id="winsub"></div>
         <div class="rate" id="rate">S</div>
         <div class="winstats">
           <div><div class="n" id="ws_score">0</div><div class="l">score</div></div>
-          <div><div class="n" id="ws_keys">0</div><div class="l">keystones</div></div>
+          <div><div class="n" id="ws_keys">0</div><div class="l">moves</div></div>
           <div><div class="n" id="ws_max">0</div><div class="l">best cascade</div></div>
           <div><div class="n" id="ws_stab">3</div><div class="l">stability</div></div>
         </div>
@@ -147,12 +184,15 @@
       </div>
     </div>
   </main>
+  <div id="tip"></div>
   <footer>
     <div class="tool">
-      <button id="tFill" class="on">◆ live</button>
-      <button id="tVoid" class="voidtool">◇ void</button>
+      <button id="tFill" class="on">◆ Fill</button>
+      <button id="tVoid" class="voidtool">◇ Empty</button>
     </div>
-    <span id="hint">tip: start where a clue forces its block — a <b>0</b> voids all nine, a <b>9</b> fills all nine.</span>
+    <button class="ghost" id="hintBtn">💡 hint</button>
+    <button class="ghost" id="assistBtn">assist: on</button>
+    <span id="hint">Find a <b style="color:var(--cyan)">cyan-glowing</b> number — it has a guaranteed move. Hover it to see why.</span>
     <button class="ghost" id="menuBtn" style="margin-left:auto">menu</button>
   </footer>
 </div>
@@ -196,6 +236,9 @@ function generate(n, keepProb, rng){
   N=n;
   for(let tries=0;tries<60;tries++){
     sol=Array.from({length:N},()=>Array.from({length:N},()=>rng()<0.52));
+    // guarantee an obvious opening: carve one all-empty 3×3 block → a visible 0 clue
+    const rr=1+Math.floor(rng()*(N-2)), cc=1+Math.floor(rng()*(N-2));
+    for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++)sol[rr+dr][cc+dc]=false;
     const full=Array.from({length:N},(_,r)=>Array.from({length:N},(_,c)=>box(r,c).reduce((s,[br,bc])=>s+(sol[br][bc]?1:0),0)));
     // start with a random subset of clues, then add until no-guess solvable
     let kept=Array.from({length:N},(_,r)=>Array.from({length:N},(_,c)=>rng()<keepProb?full[r][c]:null));
@@ -203,7 +246,7 @@ function generate(n, keepProb, rng){
     for(let i=coords.length-1;i>0;i--){const j=(rng()*(i+1))|0;[coords[i],coords[j]]=[coords[j],coords[i]];}
     let ok=verifyMatches(kept), ci=0;
     while(!ok && ci<coords.length){const[r,c]=coords[ci++];kept[r][c]=full[r][c];ok=verifyMatches(kept);}
-    if(ok){clue=kept;return true;}
+    if(ok){kept[rr][cc]=full[rr][cc];clue=kept;return true;} // force-keep the 0 clue as the opening
   }
   return false;
   function verifyMatches(kept){
@@ -214,7 +257,7 @@ function generate(n, keepProb, rng){
 }
 
 // ─────────────────────────── game state ──────────────────────────────────
-let score=0, keystones=0, maxCascade=0, stability=3, tool=FILL, solving=false, won=false;
+let score=0, keystones=0, maxCascade=0, stability=3, tool=FILL, solving=false, won=false, assist=true;
 let cascadeMap=[]; // which keystone-index resolved each cell, for the share grid
 const $=id=>document.getElementById(id);
 const boardEl=$('board');
@@ -231,7 +274,7 @@ function startGame(mode, diff){
   curMode={mode,diff,seed};
   renderBoard(); renderHud();
   $('title').classList.add('hide'); $('win').classList.add('hide');
-  $('modeline').textContent = (mode==='daily'?'daily manifold · ':'') + diff + ' · '+N+'×'+N;
+  $('modeline').textContent = (mode==='daily'?'daily · ':'') + diff + ' · '+N+'×'+N+' grid';
 }
 let curMode={};
 
@@ -248,6 +291,7 @@ function renderBoard(){
     boardEl.appendChild(d);
   }
   paintAll();
+  markForced();
 }
 function cellEl(r,c){return boardEl.children[r*N+c];}
 function paint(r,c){const el=cellEl(r,c);el.classList.remove('fill','void');if(state[r][c]===FILL)el.classList.add('fill');else if(state[r][c]===VOID)el.classList.add('void');}
@@ -256,6 +300,43 @@ function renderHud(){
   $('score').textContent=score.toLocaleString();
   $('keys').textContent=keystones; $('maxc').textContent=maxCascade;
   const st=$('stab');st.innerHTML='';for(let i=0;i<3;i++){const x=document.createElement('i');if(i>=stability)x.className='gone';st.appendChild(x);}
+}
+
+// ── teaching aids: glow guaranteed moves, hover shows the math, hint ──
+function clueCount(r,c){let f=0,u=0;for(const[br,bc]of box(r,c)){if(state[br][bc]===FILL)f++;else if(state[br][bc]===UNK)u++;}return{f,u};}
+function markForced(){
+  if(!state.length||!boardEl.children.length)return;
+  for(const el of boardEl.children)el.classList.remove('forced');
+  if(!assist||won)return;
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+    if(clue[r][c]===null)continue;const cv=clue[r][c];const{f,u}=clueCount(r,c);
+    if(u>0&&(f===cv||f+u===cv))cellEl(r,c).classList.add('forced');
+  }
+}
+function showTip(el,r,c){
+  const cv=clue[r][c];const{f,u}=clueCount(r,c);const n=box(r,c).length;const need=cv-f;
+  let m=`<b>${cv}</b> of these ${n} squares are filled.<br>found <b>${f}</b> · ${u} unknown · <b>${need}</b> still to find`;
+  if(u>0&&need===0)m+=`<br><span class="vd">→ the ${u} unknown must be EMPTY</span>`;
+  else if(u>0&&need===u)m+=`<br><span style="color:var(--fill)">→ the ${u} unknown must be FILLED</span>`;
+  const t=$('tip');t.innerHTML=m;const rc=el.getBoundingClientRect();
+  t.style.left=Math.min(window.innerWidth-220,rc.right+8)+'px';t.style.top=Math.max(8,rc.top-12)+'px';t.style.opacity=1;
+}
+function hideTip(){const t=$('tip');if(t)t.style.opacity=0;}
+function hint(){
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+    if(clue[r][c]===null)continue;const cv=clue[r][c];const{f}=clueCount(r,c);
+    const unk=box(r,c).filter(([br,bc])=>state[br][bc]===UNK);if(!unk.length)continue;
+    let v=0;if(f===cv)v=VOID;else if(f+unk.length===cv)v=FILL;if(!v)continue;
+    for(const[br,bc]of [[r,c],...unk]){const e=cellEl(br,bc);e.classList.remove('hintflash');void e.offsetWidth;e.classList.add('hintflash');setTimeout(((x)=>()=>x.classList.remove('hintflash'))(e),2200);}
+    const u=unk.length, plE=u>1?'squares are':'square is', plF=u>1?'are':'is';
+    $('hint').innerHTML = v===VOID
+      ? (cv===0
+          ? `This <b>0</b> means none of its squares are filled → its <b>${u}</b> unknown ${plE} <span class="vd">EMPTY</span> (right-click, or Empty tool).`
+          : `This <b>${cv}</b> already has all ${cv} of its filled squares → the other <b>${u}</b> ${plF} <span class="vd">EMPTY</span> (right-click, or Empty tool).`)
+      : `This <b>${cv}</b> needs every one of its remaining squares → its <b>${u}</b> unknown ${plF} <span style="color:var(--fill)">FILLED</span> (click, or Fill tool).`;
+    blip(520,.06,'triangle');return;
+  }
+  $('hint').textContent='No move on the surface — compare two overlapping numbers to deduce the next square.';
 }
 
 // ─────────────────────────── core interaction ────────────────────────────
@@ -271,6 +352,13 @@ boardEl.addEventListener('mousedown',e=>{
 boardEl.addEventListener('click',e=>{
   if(e.detail!==0)return; // ignore (handled by mousedown); keep for keyboard a11y only
 });
+// hover: highlight a number's 3×3 block and reveal its math
+boardEl.addEventListener('mouseover',e=>{const t=e.target.closest('.cell');if(!t||!state.length)return;
+  const r=+t.dataset.r,c=+t.dataset.c;
+  for(const[br,bc]of box(r,c))cellEl(br,bc).classList.add('hl');
+  t.classList.remove('hl');t.classList.add('hlc');
+  if(clue[r][c]!==null)showTip(t,r,c);});
+boardEl.addEventListener('mouseout',()=>{for(const x of boardEl.querySelectorAll('.hl,.hlc'))x.classList.remove('hl','hlc');hideTip();});
 
 function attempt(r,c,want){
   const correct = (sol[r][c]?FILL:VOID);
@@ -295,6 +383,7 @@ function attempt(r,c,want){
     if(total>=8){ showCombo('PERCOLATION ×'+(total-1)); score+=total*15; flash(); }
     keystones && (function(){})();
     renderHud();
+    markForced();
     solving=false;
     checkWin();
   });
@@ -380,7 +469,7 @@ function showWin(){
   $('rate').style.color = rate==='S'?'var(--fill)':rate==='A'?'var(--cyan)':rate==='B'?'var(--green)':'var(--muted)';
   $('ws_score').textContent=score.toLocaleString();
   $('ws_keys').textContent=keystones; $('ws_max').textContent=maxCascade; $('ws_stab').textContent=stability;
-  $('winsub').textContent = (curMode.mode==='daily'?'daily · ':'')+curMode.diff+' · '+N+'×'+N+' — collapsed in '+keystones+' keystones';
+  $('winsub').textContent = (curMode.mode==='daily'?'daily · ':'')+curMode.diff+' · '+N+'×'+N+' — solved in '+keystones+' moves';
   // share grid: blocks coloured by which keystone-cascade resolved each cell (mod a palette)
   const pal=['🟨','🟦','🟪','🟩','🟧','⬜'];
   let g='';
@@ -390,7 +479,7 @@ function showWin(){
     g+=line+'\n';}
   $('shareGrid').textContent=g.trim();
   shareText = `RUMI·COLLAPSE ${curMode.mode==='daily'?new Date().toISOString().slice(0,10):'free'} ${curMode.diff}\n`+
-              `${rate} · ${keystones} keystones · best cascade ${maxCascade} · ${score.toLocaleString()} pts\n`+g.trim();
+              `${rate} · ${keystones} moves · best chain ${maxCascade} · ${score.toLocaleString()} pts\n`+g.trim();
   $('win').classList.remove('hide');
   blip(660,.12,'triangle'); setTimeout(()=>blip(880,.18,'triangle'),120);
 }
@@ -401,6 +490,8 @@ $('againBtn').onclick=()=>startGame(curMode.mode,curMode.diff);
 // ─────────────────────────── menu / tools ────────────────────────────────
 $('tFill').onclick=()=>{tool=FILL;$('tFill').classList.add('on');$('tVoid').classList.remove('on');};
 $('tVoid').onclick=()=>{tool=VOID;$('tVoid').classList.add('on');$('tFill').classList.remove('on');};
+$('hintBtn').onclick=hint;
+$('assistBtn').onclick=()=>{assist=!assist;$('assistBtn').textContent='assist: '+(assist?'on':'off');markForced();};
 $('menuBtn').onclick=()=>$('title').classList.remove('hide');
 window.addEventListener('resize',()=>{if(state.length)renderBoard();});
 
