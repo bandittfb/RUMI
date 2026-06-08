@@ -32,8 +32,8 @@
   .ghost{color:var(--muted);}
   #readout{flex:1;min-width:200px;}
   #readout b{color:var(--fill);}#readout .vd{color:var(--cyan);}
-  .overlay{position:absolute;inset:0;background:rgba(7,10,18,.86);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:20;}
-  .card{background:linear-gradient(180deg,#141d2c,#0e1420);border:1px solid var(--line);border-radius:18px;padding:26px 30px;max-width:460px;width:92%;box-shadow:0 40px 100px -30px #000;max-height:92vh;overflow-y:auto;}
+  .overlay{position:fixed;inset:0;background:rgba(7,10,18,.92);backdrop-filter:blur(3px);display:flex;overflow-y:auto;padding:16px;z-index:30;}
+  .card{background:linear-gradient(180deg,#141d2c,#0e1420);border:1px solid var(--line);border-radius:18px;padding:26px 30px;max-width:460px;width:100%;box-shadow:0 40px 100px -30px #000;margin:auto;}
   .card h1{margin:0 0 2px;font-size:21px;letter-spacing:.14em;}.card h1 b{color:var(--fill);}
   .card .tag{color:var(--muted);font-size:12px;margin-bottom:16px;}
   .card p{color:#cdd6e3;font-size:12px;margin:7px 0;}
