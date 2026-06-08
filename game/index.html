@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+<title>RUMI · COLLAPSE</title>
+<style>
+  :root{
+    --bg:#0a0c10; --bg2:#0e1116; --panel:#141a22; --line:#222b36;
+    --text:#e6edf3; --muted:#7d8794;
+    --fill:#ffd166; --fillglow:#ffb703; --void:#1a2029; --unk:#1d2530;
+    --cyan:#4cc9f0; --violet:#c792ea; --green:#3fb950; --red:#f4978e;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:radial-gradient(1200px 700px at 50% -10%,#10151d,var(--bg));
+    color:var(--text);font:14px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;overflow:hidden;}
+  #app{height:100%;display:flex;flex-direction:column;align-items:center;}
+  header{width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;gap:12px;}
+  .brand{font-weight:700;letter-spacing:.18em;font-size:15px;}
+  .brand b{color:var(--fill);}
+  .sub{color:var(--muted);font-size:11px;letter-spacing:.05em;}
+  .hud{display:flex;gap:18px;align-items:center;}
+  .stat{text-align:center;min-width:58px;}
+  .stat .n{font-size:18px;font-weight:700;}
+  .stat .l{font-size:9px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;}
+  .stab{display:flex;gap:4px;}
+  .stab i{width:10px;height:10px;border-radius:3px;background:var(--green);box-shadow:0 0 8px var(--green);transition:.3s;}
+  .stab i.gone{background:#2a323d;box-shadow:none;}
+  main{flex:1;display:flex;align-items:center;justify-content:center;width:100%;position:relative;}
+  #boardWrap{position:relative;}
+  #board{display:grid;gap:3px;padding:10px;background:#0c1118;border:1px solid var(--line);border-radius:14px;
+    box-shadow:0 30px 80px -30px #000, inset 0 0 60px -20px #000;}
+  .cell{width:var(--cs);height:var(--cs);border-radius:6px;display:flex;align-items:center;justify-content:center;
+    font-size:calc(var(--cs)*.42);font-weight:700;cursor:pointer;position:relative;user-select:none;
+    background:var(--unk);color:#56627a;border:1px solid #232d3a;transition:transform .12s, background .25s, box-shadow .25s, color .2s;}
+  .cell:hover{transform:translateY(-1px);border-color:#3a4756;}
+  .cell.void{background:var(--void);color:#3c4656;border-color:#1a222c;}
+  .cell.fill{background:linear-gradient(160deg,var(--fill),var(--fillglow));color:#3a2c00;
+    border-color:#ffe39a;box-shadow:0 0 14px -2px var(--fillglow), inset 0 0 10px -4px #fff;}
+  .cell.clue{color:#9fb0c4;}
+  .cell.fill.clue{color:#5a3d00;}
+  .cell.pop{animation:pop .34s cubic-bezier(.2,1.6,.4,1);}
+  .cell.ring::after{content:"";position:absolute;inset:-2px;border-radius:8px;border:2px solid var(--cyan);
+    opacity:.9;animation:ring .5s ease-out forwards;pointer-events:none;}
+  .cell.bad{animation:bad .4s;}
+  @keyframes pop{0%{transform:scale(.4);}60%{transform:scale(1.18);}100%{transform:scale(1);}}
+  @keyframes ring{from{transform:scale(.7);opacity:.9;}to{transform:scale(1.5);opacity:0;}}
+  @keyframes bad{0%,100%{transform:translateX(0);}20%{transform:translateX(-5px);}40%{transform:translateX(5px);}60%{transform:translateX(-3px);}80%{transform:translateX(3px);}}
+  #combo{position:absolute;top:-6px;left:50%;transform:translateX(-50%) scale(.6);opacity:0;pointer-events:none;
+    font-size:30px;font-weight:800;color:var(--cyan);text-shadow:0 0 22px var(--cyan);letter-spacing:.04em;z-index:5;}
+  #combo.show{animation:comboPulse .6s ease-out;}
+  @keyframes comboPulse{0%{opacity:0;transform:translateX(-50%) scale(.6);}30%{opacity:1;transform:translateX(-50%) scale(1.15);}100%{opacity:0;transform:translateX(-50%) scale(1) translateY(-30px);}}
+  #flash{position:absolute;inset:0;pointer-events:none;border-radius:14px;opacity:0;}
+  #flash.go{animation:flash .5s;}
+  @keyframes flash{0%{opacity:0;}30%{opacity:.5;box-shadow:inset 0 0 120px -10px var(--cyan);}100%{opacity:0;}}
+  footer{padding:8px 16px 14px;display:flex;gap:10px;align-items:center;color:var(--muted);font-size:11px;}
+  .tool{display:flex;gap:6px;}
+  .tool button{background:var(--panel);border:1px solid var(--line);color:var(--muted);border-radius:8px;
+    padding:7px 12px;font:inherit;cursor:pointer;}
+  .tool button.on{color:var(--text);border-color:var(--fill);box-shadow:0 0 0 1px var(--fill) inset;}
+  .tool button.on.voidtool{border-color:var(--cyan);box-shadow:0 0 0 1px var(--cyan) inset;}
+  .ghost{background:none;border:0;color:var(--muted);cursor:pointer;font:inherit;text-decoration:underline dotted;}
+  /* overlays */
+  .overlay{position:absolute;inset:0;background:rgba(8,10,14,.86);backdrop-filter:blur(3px);display:flex;
+    align-items:center;justify-content:center;z-index:20;}
+  .card{background:linear-gradient(180deg,#131922,#0d121a);border:1px solid var(--line);border-radius:16px;
+    padding:26px 30px;max-width:440px;width:90%;box-shadow:0 40px 100px -30px #000;}
+  .card h1{margin:0 0 2px;font-size:22px;letter-spacing:.16em;}
+  .card h1 b{color:var(--fill);}
+  .card .tag{color:var(--muted);font-size:12px;margin-bottom:18px;}
+  .card p{color:#c4cedb;font-size:12.5px;}
+  .key{display:inline-block;background:#1c242f;border:1px solid var(--line);border-radius:5px;padding:1px 7px;color:var(--text);}
+  .modes{display:flex;flex-direction:column;gap:9px;margin:18px 0 6px;}
+  .modes button{display:flex;justify-content:space-between;align-items:center;background:var(--panel);
+    border:1px solid var(--line);color:var(--text);border-radius:10px;padding:13px 16px;font:inherit;cursor:pointer;text-align:left;transition:.15s;}
+  .modes button:hover{border-color:var(--fill);transform:translateY(-1px);}
+  .modes button .d{color:var(--muted);font-size:11px;}
+  .rate{font-size:54px;font-weight:800;text-align:center;margin:6px 0;letter-spacing:.05em;}
+  .grid-share{font-family:ui-monospace;font-size:13px;line-height:1.1;letter-spacing:1px;text-align:center;
+    background:#0a0e14;border:1px solid var(--line);border-radius:10px;padding:12px;margin:14px 0;white-space:pre;overflow:auto;}
+  .row2{display:flex;gap:10px;justify-content:center;margin-top:8px;}
+  .row2 button{flex:1;background:var(--fill);color:#241a00;border:0;border-radius:10px;padding:12px;font:inherit;font-weight:700;cursor:pointer;}
+  .row2 button.sec{background:var(--panel);color:var(--text);border:1px solid var(--line);}
+  .winstats{display:flex;justify-content:space-around;margin:6px 0 2px;text-align:center;}
+  .winstats .n{font-size:20px;font-weight:700;color:var(--cyan);}
+  .winstats .l{font-size:10px;color:var(--muted);}
+  .hide{display:none !important;}
+  .legend{display:flex;gap:14px;color:var(--muted);font-size:11px;flex-wrap:wrap;}
+  .sw{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px;margin-right:4px;}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div><div class="brand">RUMI · <b>COLLAPSE</b></div><div class="sub" id="modeline">collapse the manifold by deduction</div></div>
+    <div class="hud">
+      <div class="stat"><div class="n" id="score">0</div><div class="l">score</div></div>
+      <div class="stat"><div class="n" id="keys">0</div><div class="l">keystones</div></div>
+      <div class="stat"><div class="n" id="maxc">0</div><div class="l">max cascade</div></div>
+      <div class="stat"><div class="l" style="margin-bottom:5px">stability</div><div class="stab" id="stab"></div></div>
+    </div>
+  </header>
+  <main>
+    <div id="boardWrap">
+      <div id="combo"></div>
+      <div id="board"></div>
+      <div id="flash"></div>
+    </div>
+    <!-- TITLE -->
+    <div class="overlay" id="title">
+      <div class="card">
+        <h1>RUMI · <b>COLLAPSE</b></h1>
+        <div class="tag">a deduction game where your inference detonates</div>
+        <p>Every cell hides a state: <b style="color:var(--fill)">live</b> or <span style="color:var(--cyan)">void</span>.
+        A number is a <b>clue</b> — how many of the nine cells in its 3×3 block are <b style="color:var(--fill)">live</b>
+        (the clue's own cell counts).</p>
+        <p>Deduce a cell, then <b>collapse</b> it. A correct collapse <b style="color:var(--cyan)">cascades</b> —
+        forcing its neighbours, which force theirs — a chain reaction of pure logic. The art is finding the
+        <b>keystone</b>: the one cell whose collapse detonates the furthest.</p>
+        <div class="legend" style="margin:12px 0">
+          <span><span class="sw" style="background:linear-gradient(160deg,var(--fill),var(--fillglow))"></span>live</span>
+          <span><span class="sw" style="background:var(--void)"></span>void</span>
+          <span><span class="sw" style="background:var(--unk)"></span>unknown</span>
+          <span><span class="key">L-click</span> set live · <span class="key">R-click</span> set void</span>
+        </div>
+        <div class="modes" id="modes"></div>
+        <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:6px" id="dailyline"></div>
+      </div>
+    </div>
+    <!-- WIN -->
+    <div class="overlay hide" id="win">
+      <div class="card">
+        <h1 id="wintitle">MANIFOLD <b>COLLAPSED</b></h1>
+        <div class="tag" id="winsub"></div>
+        <div class="rate" id="rate">S</div>
+        <div class="winstats">
+          <div><div class="n" id="ws_score">0</div><div class="l">score</div></div>
+          <div><div class="n" id="ws_keys">0</div><div class="l">keystones</div></div>
+          <div><div class="n" id="ws_max">0</div><div class="l">best cascade</div></div>
+          <div><div class="n" id="ws_stab">3</div><div class="l">stability</div></div>
+        </div>
+        <div class="grid-share" id="shareGrid"></div>
+        <div class="row2">
+          <button id="shareBtn">⧉ copy result</button>
+          <button class="sec" id="againBtn">new manifold</button>
+        </div>
+      </div>
+    </div>
+  </main>
+  <footer>
+    <div class="tool">
+      <button id="tFill" class="on">◆ live</button>
+      <button id="tVoid" class="voidtool">◇ void</button>
+    </div>
+    <span id="hint">tip: start where a clue forces its block — a <b>0</b> voids all nine, a <b>9</b> fills all nine.</span>
+    <button class="ghost" id="menuBtn" style="margin-left:auto">menu</button>
+  </footer>
+</div>
+
+<script>
+"use strict";
+// ─────────────────────────── deterministic RNG ───────────────────────────
+function rngFrom(seedStr){
+  let h=1779033703^seedStr.length;
+  for(let i=0;i<seedStr.length;i++){h=Math.imul(h^seedStr.charCodeAt(i),3432918353);h=(h<<13)|(h>>>19);}
+  let a=h>>>0;
+  return ()=>{a|=0;a=(a+0x6d2b79f5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return ((t^(t>>>14))>>>0)/4294967296;};
+}
+// ─────────────────────────── puzzle model ────────────────────────────────
+const UNK=0, FILL=1, VOID=2;
+let N=11, sol=[], clue=[], state=[], hasClue=[];
+function inb(r,c){return r>=0&&c>=0&&r<N&&c<N;}
+function box(r,c){const o=[];for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){if(inb(r+dr,c+dc))o.push([r+dr,c+dc]);}return o;}
+
+// global propagation solver over a clue set — used to verify no-guess solvability
+function solves(clueSet){
+  const st=Array.from({length:N},()=>Array(N).fill(UNK));
+  let changed=true,guard=0;
+  while(changed && guard++<2000){
+    changed=false;
+    for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+      if(!clueSet[r][c]&&clueSet[r][c]!==0) continue;
+      const cv=clueSet[r][c]; const b=box(r,c);
+      let f=0,u=0;
+      for(const[br,bc]of b){if(st[br][bc]===FILL)f++;else if(st[br][bc]===UNK)u++;}
+      if(f>cv||f+u<cv) return null; // contradiction
+      if(f===cv&&u>0){for(const[br,bc]of b)if(st[br][bc]===UNK){st[br][bc]=VOID;changed=true;}}
+      else if(f+u===cv&&u>0){for(const[br,bc]of b)if(st[br][bc]===UNK){st[br][bc]=FILL;changed=true;}}
+    }
+  }
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(st[r][c]===UNK)return null; // not fully deducible
+  return st;
+}
+
+function generate(n, keepProb, rng){
+  N=n;
+  for(let tries=0;tries<60;tries++){
+    sol=Array.from({length:N},()=>Array.from({length:N},()=>rng()<0.52));
+    const full=Array.from({length:N},(_,r)=>Array.from({length:N},(_,c)=>box(r,c).reduce((s,[br,bc])=>s+(sol[br][bc]?1:0),0)));
+    // start with a random subset of clues, then add until no-guess solvable
+    let kept=Array.from({length:N},(_,r)=>Array.from({length:N},(_,c)=>rng()<keepProb?full[r][c]:null));
+    const coords=[];for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(kept[r][c]===null)coords.push([r,c]);
+    for(let i=coords.length-1;i>0;i--){const j=(rng()*(i+1))|0;[coords[i],coords[j]]=[coords[j],coords[i]];}
+    let ok=verifyMatches(kept), ci=0;
+    while(!ok && ci<coords.length){const[r,c]=coords[ci++];kept[r][c]=full[r][c];ok=verifyMatches(kept);}
+    if(ok){clue=kept;return true;}
+  }
+  return false;
+  function verifyMatches(kept){
+    const st=solves(kept); if(!st)return false;
+    for(let r=0;r<N;r++)for(let c=0;c<N;c++)if((st[r][c]===FILL)!==sol[r][c])return false;
+    return true;
+  }
+}
+
+// ─────────────────────────── game state ──────────────────────────────────
+let score=0, keystones=0, maxCascade=0, stability=3, tool=FILL, solving=false, won=false;
+let cascadeMap=[]; // which keystone-index resolved each cell, for the share grid
+const $=id=>document.getElementById(id);
+const boardEl=$('board');
+
+function startGame(mode, diff){
+  const cfg={easy:{n:8,k:.72},medium:{n:11,k:.58},hard:{n:14,k:.46}}[diff];
+  const seed = mode==='daily' ? 'daily-'+new Date().toISOString().slice(0,10)+'-'+diff
+                              : 'free-'+Math.floor(Math.random()*1e9)+'-'+diff;
+  const rng=rngFrom(seed);
+  generate(cfg.n,cfg.k,rng);
+  state=Array.from({length:N},()=>Array(N).fill(UNK));
+  cascadeMap=Array.from({length:N},()=>Array(N).fill(-1));
+  score=0;keystones=0;maxCascade=0;stability=3;won=false;solving=false;
+  curMode={mode,diff,seed};
+  renderBoard(); renderHud();
+  $('title').classList.add('hide'); $('win').classList.add('hide');
+  $('modeline').textContent = (mode==='daily'?'daily manifold · ':'') + diff + ' · '+N+'×'+N;
+}
+let curMode={};
+
+function renderBoard(){
+  const cs = Math.min( Math.floor((Math.min(window.innerWidth-40, 560))/N) - 3,
+                       Math.floor((window.innerHeight-200)/N) - 3, 46);
+  document.documentElement.style.setProperty('--cs', Math.max(22,cs)+'px');
+  boardEl.style.gridTemplateColumns=`repeat(${N},var(--cs))`;
+  boardEl.innerHTML='';
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+    const d=document.createElement('div');
+    d.className='cell'; d.dataset.r=r; d.dataset.c=c;
+    if(clue[r][c]!==null){d.classList.add('clue'); d.textContent=clue[r][c];}
+    boardEl.appendChild(d);
+  }
+  paintAll();
+}
+function cellEl(r,c){return boardEl.children[r*N+c];}
+function paint(r,c){const el=cellEl(r,c);el.classList.remove('fill','void');if(state[r][c]===FILL)el.classList.add('fill');else if(state[r][c]===VOID)el.classList.add('void');}
+function paintAll(){for(let r=0;r<N;r++)for(let c=0;c<N;c++)paint(r,c);}
+function renderHud(){
+  $('score').textContent=score.toLocaleString();
+  $('keys').textContent=keystones; $('maxc').textContent=maxCascade;
+  const st=$('stab');st.innerHTML='';for(let i=0;i<3;i++){const x=document.createElement('i');if(i>=stability)x.className='gone';st.appendChild(x);}
+}
+
+// ─────────────────────────── core interaction ────────────────────────────
+boardEl.addEventListener('contextmenu',e=>e.preventDefault());
+boardEl.addEventListener('mousedown',e=>{
+  const t=e.target.closest('.cell'); if(!t||solving||won)return;
+  const r=+t.dataset.r,c=+t.dataset.c;
+  if(state[r][c]!==UNK)return;
+  const want = e.button===2 ? VOID : (e.button===0 ? FILL : VOID);
+  attempt(r,c, e.button===1?tool:want);
+});
+// touch / tool-based for mobile
+boardEl.addEventListener('click',e=>{
+  if(e.detail!==0)return; // ignore (handled by mousedown); keep for keyboard a11y only
+});
+
+function attempt(r,c,want){
+  const correct = (sol[r][c]?FILL:VOID);
+  if(want!==correct){ // wrong deduction → fizzle
+    const el=cellEl(r,c); el.classList.add('bad'); setTimeout(()=>el.classList.remove('bad'),420);
+    stability=Math.max(0,stability-1); blip(140,.08,'sawtooth'); renderHud();
+    if(stability===0){/* soft: keep playing, rating will reflect */}
+    return;
+  }
+  solving=true;
+  keystones++;
+  cascadeMap[r][c]=keystones;
+  state[r][c]=correct;
+  const el=cellEl(r,c); paint(r,c); el.classList.add('pop','ring'); setTimeout(()=>el.classList.remove('ring'),520);
+  score+=10; blip(correct===FILL?440:330,.05);
+  // run the cascade flood from this cell, staged into waves (capped per detonation)
+  const waves = floodFrom(r,c,16);
+  let total=1; // include the keystone
+  animateWaves(waves, ()=>{
+    for(const w of waves) total+=w.length;
+    if(total-1>maxCascade)maxCascade=total-1;
+    if(total>=8){ showCombo('PERCOLATION ×'+(total-1)); score+=total*15; flash(); }
+    keystones && (function(){})();
+    renderHud();
+    solving=false;
+    checkWin();
+  });
+}
+
+// flood: propagate forced cells outward from a seed, in ordered waves, capped so a
+// big forced region collapses over several detonations instead of all at once.
+function floodFrom(sr,sc,cap){
+  const waves=[]; let total=0; let frontier=[[sr,sc]];
+  while(frontier.length && total<cap){
+    const clueKeys=new Set();
+    for(const[fr,fc]of frontier)for(const[br,bc]of box(fr,fc)) if(clue[br][bc]!==null) clueKeys.add(br+','+bc);
+    const cand=[]; const seen=new Set();
+    for(const k of clueKeys){
+      const[cr,cc]=k.split(',').map(Number); const cv=clue[cr][cc]; const b=box(cr,cc);
+      let f=0; const unk=[];
+      for(const[br,bc]of b){if(state[br][bc]===FILL)f++;else if(state[br][bc]===UNK)unk.push([br,bc]);}
+      if(!unk.length)continue;
+      const setV = f===cv ? VOID : (f+unk.length===cv ? FILL : 0);
+      if(!setV)continue;
+      for(const[br,bc]of unk){const id=br+','+bc;if(seen.has(id))continue;seen.add(id);cand.push([br,bc,setV]);}
+    }
+    if(!cand.length)break;
+    const room=cap-total; const apply = room>=cand.length ? cand : cand.slice(0,room);
+    for(const[br,bc,v]of apply){state[br][bc]=v;cascadeMap[br][bc]=keystones;}
+    total+=apply.length; waves.push(apply);
+    if(apply.length<cand.length)break; // cap reached mid-wave; leave the rest for the next keystone
+    frontier=apply.map(([br,bc])=>[br,bc]);
+  }
+  return waves;
+}
+
+function animateWaves(waves, done){
+  if(!waves.length){done();return;}
+  let i=0, combo=0;
+  const step=()=>{
+    if(i>=waves.length){done();return;}
+    const wave=waves[i++];
+    for(const[r,c,v]of wave){
+      paint(r,c); const el=cellEl(r,c); el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop','ring');
+      setTimeout(((e)=>()=>e.classList.remove('ring'))(el),500);
+    }
+    combo+=wave.length;
+    if(combo>=3) showCombo('×'+combo);
+    blip(360+Math.min(combo,30)*26, .045, 'triangle');
+    score += wave.length * 5 * (1 + i*0.25); score=Math.round(score);
+    renderHud();
+    setTimeout(step, Math.max(60, 150 - i*8));
+  };
+  step();
+}
+
+function checkWin(){
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(state[r][c]===UNK)return;
+  won=true; setTimeout(showWin, 500);
+}
+
+// ─────────────────────────── juice ───────────────────────────────────────
+let actx;
+function blip(freq,dur,type){
+  try{
+    actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+    const o=actx.createOscillator(),g=actx.createGain();
+    o.type=type||'sine';o.frequency.value=freq;o.connect(g);g.connect(actx.destination);
+    g.gain.setValueAtTime(.0001,actx.currentTime);
+    g.gain.exponentialRampToValueAtTime(.18,actx.currentTime+.01);
+    g.gain.exponentialRampToValueAtTime(.0001,actx.currentTime+(dur||.06));
+    o.start();o.stop(actx.currentTime+(dur||.06)+.02);
+  }catch(e){}
+}
+function showCombo(t){const el=$('combo');el.textContent=t;el.classList.remove('show');void el.offsetWidth;el.classList.add('show');}
+function flash(){const f=$('flash');f.classList.remove('go');void f.offsetWidth;f.classList.add('go');}
+
+// ─────────────────────────── win / share ─────────────────────────────────
+function showWin(){
+  const par = N*N*0.6;
+  const eff = keystones>0 ? (N*N)/keystones : 0; // cells per keystone
+  let rate='C';
+  if(stability===3 && eff>=6) rate='S';
+  else if(stability>=2 && eff>=4.5) rate='A';
+  else if(eff>=3.2) rate='B';
+  $('rate').textContent=rate;
+  $('rate').style.color = rate==='S'?'var(--fill)':rate==='A'?'var(--cyan)':rate==='B'?'var(--green)':'var(--muted)';
+  $('ws_score').textContent=score.toLocaleString();
+  $('ws_keys').textContent=keystones; $('ws_max').textContent=maxCascade; $('ws_stab').textContent=stability;
+  $('winsub').textContent = (curMode.mode==='daily'?'daily · ':'')+curMode.diff+' · '+N+'×'+N+' — collapsed in '+keystones+' keystones';
+  // share grid: blocks coloured by which keystone-cascade resolved each cell (mod a palette)
+  const pal=['🟨','🟦','🟪','🟩','🟧','⬜'];
+  let g='';
+  const step=Math.max(1,Math.ceil(N/9)); // shrink big boards for the share
+  for(let r=0;r<N;r+=step){let line='';for(let c=0;c<N;c+=step){
+    const k=cascadeMap[r][c]; line += sol[r][c]? pal[(Math.max(0,k-1))%5] : '⬛';}
+    g+=line+'\n';}
+  $('shareGrid').textContent=g.trim();
+  shareText = `RUMI·COLLAPSE ${curMode.mode==='daily'?new Date().toISOString().slice(0,10):'free'} ${curMode.diff}\n`+
+              `${rate} · ${keystones} keystones · best cascade ${maxCascade} · ${score.toLocaleString()} pts\n`+g.trim();
+  $('win').classList.remove('hide');
+  blip(660,.12,'triangle'); setTimeout(()=>blip(880,.18,'triangle'),120);
+}
+let shareText='';
+$('shareBtn').onclick=()=>{navigator.clipboard?.writeText(shareText);const b=$('shareBtn');b.textContent='copied ✓';setTimeout(()=>b.textContent='⧉ copy result',1400);};
+$('againBtn').onclick=()=>startGame(curMode.mode,curMode.diff);
+
+// ─────────────────────────── menu / tools ────────────────────────────────
+$('tFill').onclick=()=>{tool=FILL;$('tFill').classList.add('on');$('tVoid').classList.remove('on');};
+$('tVoid').onclick=()=>{tool=VOID;$('tVoid').classList.add('on');$('tFill').classList.remove('on');};
+$('menuBtn').onclick=()=>$('title').classList.remove('hide');
+window.addEventListener('resize',()=>{if(state.length)renderBoard();});
+
+function buildMenu(){
+  const m=$('modes');m.innerHTML='';
+  const opts=[
+    ['daily','medium','Daily Manifold','one shared puzzle · everyone gets the same'],
+    ['free','easy','Free · Easy','8×8 · gentle warm-up'],
+    ['free','medium','Free · Medium','11×11 · the standard collapse'],
+    ['free','hard','Free · Hard','14×14 · deep cascades, sparse clues'],
+  ];
+  for(const[mode,diff,name,desc]of opts){
+    const b=document.createElement('button');
+    b.innerHTML=`<span>${name}</span><span class="d">${desc}</span>`;
+    b.onclick=()=>{if(!actx)blip(1,.001);startGame(mode,diff);};
+    m.appendChild(b);
+  }
+  $('dailyline').textContent='today · '+new Date().toISOString().slice(0,10);
+}
+buildMenu();
+</script>
+</body>
+</html>
