@@ -133,12 +133,18 @@ function buildSolid(n){
     for(let r=0;r<n;r++)for(let c=0;c<n;c++){
       const a=(2*c+1)/n-1, b=(2*r+1)/n-1, h=1/n;
       const cubeC=cubePt(F,a,b);
-      const corners=[[a-h,b-h],[a+h,b-h],[a+h,b+h],[a-h,b+h]].map(([x,y])=>norm(cubePt(F,x,y)).map(z=>z*R));
+      const cornersFlat=[[a-h,b-h],[a+h,b-h],[a+h,b+h],[a-h,b+h]].map(([x,y])=>cubePt(F,x,y));
+      const corners=cornersFlat.map(p=>norm(p).map(z=>z*R));   // spherified (puzzle)
+      const cubeCorners=cornersFlat.map(p=>p.map(z=>z*R));     // flat cube (resolved art)
       const ctr=norm(cubeC).map(z=>z*R);
+      const cubeCtr=cubeC.map(z=>z*R);
       const nrm=norm(cubeC);
+      const nx=Math.abs(nrm[0]),ny=Math.abs(nrm[1]),nz2=Math.abs(nrm[2]);
+      const mxc=Math.max(ny+nz2,nx+nz2,nx+ny)||1;            // CMY by face: ±X cyan, ±Y magenta, ±Z yellow
+      const cmy=[Math.round(55+185*(ny+nz2)/mxc),Math.round(55+185*(nx+nz2)/mxc),Math.round(55+185*(nx+ny)/mxc)];
       const mids=[[a,b-h],[a+h,b],[a,b+h],[a-h,b]].map(([x,y])=>cubePt(F,x,y)); // 4 edge mids (cube coords)
       const idx=cells.length;
-      cells.push({fi,r,c,ctr,corners,nrm,mids});
+      cells.push({fi,r,c,ctr,cubeCtr,corners,cubeCorners,nrm,cmy,mids});
       for(const m of mids){const k=m.map(z=>Math.round(z*1000)/1000).join(',');
         if(!midMap.has(k))midMap.set(k,[]);midMap.get(k).push(idx);}
     }
@@ -184,11 +190,11 @@ function generate(n,keepProb){
 // ── game state ───────────────────────────────────────────────────────────
 let moves=0,maxc=0,stability=3,tool=FILL,won=false,solving=false,assist=true,firstCascade=false,curMode={},solveTime=0,revealT=0;
 let yaw=0.7,pitch=-0.45,drag=false,lx=0,ly=0,moved=0,autoIdle=0,winFlash=0;
-let hoverCell=-1, pops=new Map();
+let hoverCell=-1, pops=new Map(), morph=[], gMorph=0;
 function newGame(diff){
   const cfg={learn:{n:2,k:.85},easy:{n:3,k:.74},medium:{n:4,k:.64},hard:{n:5,k:.55}}[diff];
   generate(cfg.n,cfg.k);
-  state=cells.map(()=>UNK); moves=0;maxc=0;stability=3;won=false;solving=false;firstCascade=false;pops.clear();
+  state=cells.map(()=>UNK); morph=cells.map(()=>0); gMorph=0; moves=0;maxc=0;stability=3;won=false;solving=false;firstCascade=false;pops.clear();
   yaw=0.7;pitch=-0.45;autoIdle=0;winFlash=0; curMode={diff};
   $('title').classList.add('hide');$('win').classList.add('hide');
   $('modeline').textContent=diff+' · spherified cube · '+(cfg.n)+'×'+(cfg.n)+'×6 = '+cells.length+' cells';
@@ -220,12 +226,15 @@ function render(){
   if(!drag&&!won){autoIdle++;if(autoIdle>120)yaw+=0.0025;}
   if(won){yaw+=0.006;winFlash=Math.min(1,winFlash+0.015);revealT=Math.min(1,(performance.now()-solveTime)/1800);}else revealT=0;
   ctx.clearRect(0,0,W,H);
-  // glow core behind
+  // ease each cell from sphere(0)→cube(1) as it gets solved
+  let prog=0;for(let i=0;i<cells.length;i++){if(state[i]!==UNK)prog++;const t=state[i]!==UNK?1:0;morph[i]+=(t-(morph[i]||0))*0.07;}prog/=cells.length;
+  gMorph+=(Math.pow(prog,0.8)-gMorph)*0.05;  // GLOBAL sphere→cube morph (watertight); per-cell morph[] drives the glass/CMY reveal
+  // glow core behind — violet → CMY-white as the art forms
   const o=proj([0,0,0]);
-  let prog=0;for(let i=0;i<cells.length;i++)if(state[i]!==UNK)prog++;prog/=cells.length;
   ctx.save();ctx.globalCompositeOperation='lighter';
-  const Rc=SCALE*(0.5+0.5*prog)*(1+winFlash*0.3);const g=ctx.createRadialGradient(o.x,o.y,0,o.x,o.y,Rc);
-  g.addColorStop(0,`rgba(155,124,255,${0.05+0.18*prog+0.2*winFlash})`);g.addColorStop(1,'rgba(155,124,255,0)');
+  const Rc=SCALE*(0.5+0.5*prog)*(1+winFlash*0.35);const g=ctx.createRadialGradient(o.x,o.y,0,o.x,o.y,Rc);
+  const cr=Math.round(155+100*prog),cg=Math.round(124+115*prog);
+  g.addColorStop(0,`rgba(${cr},${cg},255,${0.05+0.2*prog+0.25*winFlash})`);g.addColorStop(1,`rgba(${cr},${cg},255,0)`);
   ctx.fillStyle=g;ctx.beginPath();ctx.arc(o.x,o.y,Rc,0,7);ctx.fill();ctx.restore();
 
   // visible cells (back-face cull by rotated normal), sorted far→near
@@ -238,34 +247,39 @@ function render(){
   ctx.restore&&ctx.restore();
 }
 function drawCell(i,nz,now){
-  const cell=cells[i],st=state[i];
-  const pts=cell.corners.map(proj);
-  const shade=0.45+0.55*nz;
-  const fc=FACECOL[cell.fi];
+  const cell=cells[i],st=state[i],m=morph[i]||0,cmy=cell.cmy,shade=0.45+0.55*nz;
+  // morph the facet sphere → cube as it resolves
+  const pts=cell.corners.map((s,k)=>{const c=cell.cubeCorners[k];return proj([s[0]+(c[0]-s[0])*gMorph,s[1]+(c[1]-s[1])*gMorph,s[2]+(c[2]-s[2])*gMorph]);});
   ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);for(let k=1;k<4;k++)ctx.lineTo(pts[k].x,pts[k].y);ctx.closePath();
   let pop=0;if(pops.has(i)){pop=Math.max(0,1-(now-pops.get(i))/450);if(pop<=0)pops.delete(i);}
-  if(st===FILL){ctx.fillStyle=`rgba(${255},${198+30*pop|0},${102},${(0.78+0.2*pop)*shade+0.15})`;}
-  else if(st===VOID){ctx.fillStyle=`rgba(14,22,34,${0.55+0.35*nz})`;}
-  else {ctx.fillStyle=`rgba(${fc[0]*0.5|0},${fc[1]*0.5|0},${fc[2]*0.5|0},${0.10+0.16*nz})`;}
+  // FILL — unsolved: neutral opaque tile · solved: translucent CMY glass (live brighter)
+  if(st===UNK){const fc=FACECOL[cell.fi];ctx.fillStyle=`rgba(${fc[0]*0.5|0},${fc[1]*0.5|0},${fc[2]*0.5|0},${0.12+0.18*nz})`;}
+  else{const live=st===FILL;ctx.fillStyle=`rgba(${cmy[0]},${cmy[1]},${cmy[2]},${((live?0.28:0.06)*shade)*(0.45+0.55*m)+0.06*pop})`;}
   ctx.fill();
-  // border / glow
+  if(st!==UNK&&m>0.04){ctx.save();ctx.globalCompositeOperation='lighter';const live=st===FILL;
+    ctx.fillStyle=`rgba(${cmy[0]},${cmy[1]},${cmy[2]},${(live?0.16:0.04)*m*shade})`;ctx.fill();ctx.restore();}
+  // border
   const forced=assist&&!won&&isForced(i);
-  ctx.lineWidth= forced?2.2:1;
-  ctx.strokeStyle= i===hoverCell?'#fff':(forced?`rgba(76,201,240,${0.55+0.45*Math.sin(now/300)*0.5+0.3})`:(st===FILL?'rgba(255,227,154,.8)':`rgba(120,150,190,${0.18+0.3*nz})`));
+  ctx.lineWidth=forced?2.2:(st!==UNK?1.2:1);
+  if(i===hoverCell)ctx.strokeStyle='#fff';
+  else if(forced)ctx.strokeStyle=`rgba(76,201,240,${0.55+0.45*(0.5+0.5*Math.sin(now/300))})`;
+  else if(st!==UNK)ctx.strokeStyle=`rgba(${cmy[0]},${cmy[1]},${cmy[2]},${(0.32+0.4*nz)*(0.4+0.6*m)})`;
+  else ctx.strokeStyle=`rgba(120,150,190,${0.18+0.3*nz})`;
   ctx.stroke();
-  if(pop>0){ctx.save();ctx.globalCompositeOperation='lighter';ctx.strokeStyle=`rgba(76,201,240,${pop})`;ctx.lineWidth=2.5;ctx.stroke();ctx.restore();}
-  // marker / clue
-  const ctP=proj(cell.ctr);const fs=Math.max(8,SCALE*0.10*(0.6+0.5*nz));
-  if(won&&st===FILL&&revealT>0){ctx.save();ctx.globalCompositeOperation='lighter';
-    const rr=SCALE*(0.05+0.035*revealT)*(1+0.45*Math.sin(now/220+i));
+  if(pop>0){ctx.save();ctx.globalCompositeOperation='lighter';ctx.strokeStyle=`rgba(${cmy[0]},${cmy[1]},${cmy[2]},${pop})`;ctx.lineWidth=2.5;ctx.stroke();ctx.restore();}
+  // marker / clue — track the morphing centre; numbers dissolve as the cell becomes art
+  const cc=cell.cubeCtr,sc=cell.ctr;const ctP=proj([sc[0]+(cc[0]-sc[0])*gMorph,sc[1]+(cc[1]-sc[1])*gMorph,sc[2]+(cc[2]-sc[2])*gMorph]);
+  const fs=Math.max(8,SCALE*0.10*(0.6+0.5*nz));
+  if(st===FILL&&m>0.04){ctx.save();ctx.globalCompositeOperation='lighter';
+    const boost=won?(0.45+0.6*revealT):0.32;const rr=SCALE*(0.045+0.03*m)*(1+0.4*Math.sin(now/220+i));
     const gg=ctx.createRadialGradient(ctP.x,ctP.y,0,ctP.x,ctP.y,rr);
-    gg.addColorStop(0,`rgba(255,212,110,${0.6*revealT})`);gg.addColorStop(1,'rgba(255,212,110,0)');
+    gg.addColorStop(0,`rgba(${cmy[0]},${cmy[1]},${cmy[2]},${0.55*boost*m})`);gg.addColorStop(1,`rgba(${cmy[0]},${cmy[1]},${cmy[2]},0)`);
     ctx.fillStyle=gg;ctx.beginPath();ctx.arc(ctP.x,ctP.y,rr,0,7);ctx.fill();ctx.restore();}
   ctx.font='700 '+fs.toFixed(0)+"px ui-monospace,monospace";ctx.textAlign='center';ctx.textBaseline='middle';
-  const na=won?Math.max(0,1-revealT*0.92):1;
-  if(clue[i]!=null){ctx.globalAlpha=na;ctx.fillStyle=st===FILL?'rgba(60,40,0,.92)':`rgba(200,214,230,${0.5+0.5*nz})`;ctx.fillText(clue[i],ctP.x,ctP.y);ctx.globalAlpha=1;}
-  else if(st===VOID){ctx.fillStyle=`rgba(92,113,133,${0.6+0.4*nz})`;ctx.fillText('◇',ctP.x,ctP.y);}
-  else if(st===FILL){ctx.fillStyle='rgba(60,40,0,.85)';ctx.fillText('◆',ctP.x,ctP.y);}
+  const na=Math.max(0,1-m*0.92);
+  if(clue[i]!=null&&na>0.03){ctx.globalAlpha=na;ctx.fillStyle=st===FILL?'rgba(40,28,0,.92)':`rgba(200,214,230,${0.5+0.5*nz})`;ctx.fillText(clue[i],ctP.x,ctP.y);ctx.globalAlpha=1;}
+  else if(st===VOID&&m<0.45){ctx.globalAlpha=Math.max(0,1-m*2.2);ctx.fillStyle=`rgba(92,113,133,${0.6+0.4*nz})`;ctx.fillText('◇',ctP.x,ctP.y);ctx.globalAlpha=1;}
+  else if(st===FILL&&clue[i]==null&&na>0.3){ctx.globalAlpha=na;ctx.fillStyle='rgba(40,28,0,.7)';ctx.fillText('◆',ctP.x,ctP.y);ctx.globalAlpha=1;}
 }
 function isForced(i){if(clue[i]==null)return false;const P=plus(i);let f=0,u=0;for(const j of P){if(state[j]===FILL)f++;else if(state[j]===UNK)u++;}return u>0&&(f===clue[i]||f+u===clue[i]);}
 
