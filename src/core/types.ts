@@ -75,7 +75,13 @@ export interface FieldReading {
   capacity: number;
   /** U(x): utilization, normalized. */
   utilization: number;
-  /** Collapse Potential = C * K * (1 - U), using a prior for unknown U. */
+  /**
+   * Collapse Score — the PRIMARY ranking observable: correction · confidence ·
+   * (1 − utilization). Capacity enters only through confidence, not as a
+   * magnitude gate (WorldForge v2 causal benchmark: that gate is net-harmful).
+   */
+  collapseScore: number;
+  /** Collapse Potential = C * K * (1 - U) — retained for reference/continuity. */
   collapsePotential: number;
   /**
    * Evidence strength behind this reading, in [0,1] — the product of per-field

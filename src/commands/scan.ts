@@ -89,15 +89,16 @@ function printReport(report: ScanReport, top: number): void {
   out.write("\n  RUMI - Revealed Uncollapsed Manifold Instrument\n");
   out.write(`  repo: ${report.repo}\n`);
   out.write(`  capabilities: ${report.capabilityCount}   generated: ${report.generatedAt}\n`);
-  out.write("\n  Latent Affordance Candidates (ranked by Collapse Potential)\n");
+  out.write("\n  Latent Affordance Candidates (ranked by Collapse Score)\n");
   out.write("  -----------------------------------------------------------\n");
 
   const shown = report.readings.slice(0, top);
   for (const r of shown) {
     const uses = r.utilizationKnown ? `${r.evidence.usageCount} uses` : "usage unknown";
     out.write(`\n  > ${r.label}  [${r.capability}]\n`);
-    out.write(`      Collapse Potential : ${bar(r.collapsePotential)} ${r.collapsePotential.toFixed(3)}\n`);
+    out.write(`      Collapse Score     : ${bar(r.collapseScore)} ${r.collapseScore.toFixed(3)}\n`);
     out.write(`      confidence         : ${bar(r.confidence)} ${r.confidence.toFixed(3)}${r.utilizationKnown ? "" : "   ⚠ usage unverified"}\n`);
+    out.write(`      (Collapse Potential: ${bar(r.collapsePotential)} ${r.collapsePotential.toFixed(3)}  — legacy C·K·(1−U))\n`);
     out.write(`      C  correction      : ${bar(r.correction)} ${r.correction.toFixed(3)}  (${r.evidence.correctionCount} signals, coherence ${r.evidence.directionCoherence})\n`);
     if (r.evidence.correctionCount > 0 && r.evidence.arrowShare < 0.999) {
       out.write(`      demand mix         : ${Math.round(r.evidence.arrowShare * 100)}% directional · ${Math.round((1 - r.evidence.arrowShare) * 100)}% heat (direction uncertain)\n`);

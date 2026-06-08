@@ -113,12 +113,23 @@ export function computeReadings(
     const confidence =
       correctionConfidence * capacityConfidence * utilizationConfidence;
 
+    // Collapse Score — the PRIMARY ranking, from the WorldForge v2 causal
+    // benchmark: demand × confidence × unused-ness. Capacity is DEMOTED from a
+    // multiplicative magnitude gate (which the benchmark showed is net-harmful in
+    // all 8 noise regimes — text-presence capacity is a noisy proxy for real
+    // buildability) to a CONFIDENCE factor: it survives in capacityConfidence
+    // (which still zeroes out unsupported wishes), it just no longer multiplies
+    // the magnitude. Collapse Potential (C·K·(1−U)) is retained below for
+    // reference/continuity. Synthetic-validated; real-data validation pending.
+    const collapseScore = correction * confidence * (1 - utilization);
+
     return {
       capability: cap.id,
       label: cap.label,
       correction: round(correction),
       capacity: round(capacityVal),
       utilization: round(utilization),
+      collapseScore: round(collapseScore),
       collapsePotential: round(collapsePotential),
       confidence: round(confidence),
       utilizationKnown,
@@ -138,7 +149,9 @@ export function computeReadings(
     };
   });
 
-  readings.sort((a, b) => b.collapsePotential - a.collapsePotential);
+  // Rank by Collapse Score (the benchmark-validated primary observable), not the
+  // legacy Collapse Potential.
+  readings.sort((a, b) => b.collapseScore - a.collapseScore);
   return readings;
 }
 

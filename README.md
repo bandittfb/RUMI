@@ -19,19 +19,21 @@ Every system selection displaces alternatives. Some of those displaced alternati
 | Capacity | `K(x)` | What does the codebase structurally already support? |
 | Utilization | `U(x)` | What is actually being used? |
 
-The interesting region is **high C, high K, low U** — strong correction pressure meeting latent, unused capacity. RUMI quantifies that region as a single discovered observable:
+The interesting region is **high C, high K, low U** — strong correction pressure meeting latent, unused capacity. RUMI's original observable multiplied the three fields directly:
 
 ```
-Collapse Potential   CP(x) = C(x) · K(x) · (1 − U(x))
+Collapse Potential   CP(x) = C(x) · K(x) · (1 − U(x))    (retained as a component)
 ```
 
-`CP` is high only when all three conditions hold at once. It is not a simple function of any single existing metric:
+But a causal benchmark ([`docs/worldforge.md`] / WorldForge v2 — synthetic worlds with a *hidden* causal truth RUMI never sees, scored by simulated counterfactual collapse) showed that gating on capacity as a *magnitude* multiplier is **net-harmful in every noise regime tested**: text-presence capacity is too noisy a proxy for real buildability, and multiplying by it crushes true positives. The benchmark-validated primary ranking is:
 
-- high corrections alone → may be an *unsupported wish*
-- high capacity alone → may be *dormant code* nobody wants
-- low usage alone → nobody wants it either
+```
+Collapse Score   S(x) = C(x) · confidence(x) · (1 − U(x))
+```
 
-The product gates the discovery on the intersection. That intersection is where an **uncollapsed feature** lives.
+Capacity isn't discarded — it survives inside **confidence** (a capability with no matching code has `capacityConfidence = 0`, so unsupported wishes still score zero). It just no longer acts as a magnitude gate. This beat `C·K·(1−U)` across all 8 noise regimes; a *learned* combiner does better still, so the long arc is to learn the weighting. **This is synthetic-validated; validation on a real correction stream is pending** — `CP` is retained alongside `S` so the change is transparent and reversible.
+
+The qualitative regions are unchanged — high corrections alone is an *unsupported wish*, high capacity alone is *dormant code*, low usage alone is nobody-wants-it — and the intersection is still where an **uncollapsed feature** lives.
 
 ## Quick start
 
@@ -59,8 +61,9 @@ Running against `examples/sample-repo` surfaces, as the top candidate:
 
 ```
 ▸ Enterprise Renewal Risk Review  [enterprise-renewal-risk]
-    Collapse Potential : 0.667
+    Collapse Score     : 0.626        ← primary ranking (C · confidence · (1−U))
     confidence         : 0.811
+    (Collapse Potential: 0.667        — legacy C·K·(1−U))
     C  correction      : 0.811  (5 events, coherence 1)
     K  capacity        : 0.865  (6 signals, 4 files)
     U  utilization     : 0.049  (1 uses)

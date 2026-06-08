@@ -139,7 +139,7 @@ function printDiscovery(report: DiscoveryReport, top: number): void {
     const uses = r.utilizationKnown ? `${r.evidence.usageCount} uses` : "usage unknown";
     out.write(`\n  > ${r.label}  [${r.capability}]\n`);
     out.write(`      proposed signals   : ${r.signals.join(", ")}\n`);
-    out.write(`      Collapse Potential : ${bar(r.collapsePotential)} ${r.collapsePotential.toFixed(3)}\n`);
+    out.write(`      Collapse Score     : ${bar(r.collapseScore)} ${r.collapseScore.toFixed(3)}\n`);
     out.write(`      confidence         : ${bar(r.confidence)} ${r.confidence.toFixed(3)}${r.utilizationKnown ? "" : "   ⚠ usage unverified"}\n`);
     out.write(`      C  correction      : ${bar(r.correction)} ${r.correction.toFixed(3)}  (${r.evidence.correctionCount} signals, coherence ${r.evidence.directionCoherence})\n`);
     if (r.evidence.correctionCount > 0 && r.evidence.arrowShare < 0.999) {
