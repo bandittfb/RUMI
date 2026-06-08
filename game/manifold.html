@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+<title>RUMI · COLLAPSE — the manifold</title>
+<style>
+  :root{--bg:#070a12;--panel:#121a28;--line:#243042;--text:#e8eef6;--muted:#7e8aa0;
+    --fill:#ffd166;--fillglow:#ffb703;--cyan:#4cc9f0;--violet:#9b7cff;--green:#3fb950;--red:#f4978e;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;overflow:hidden;background:
+    radial-gradient(1000px 700px at 70% -10%,rgba(155,124,255,.10),transparent),
+    radial-gradient(900px 700px at -10% 110%,rgba(76,201,240,.07),transparent),var(--bg);
+    color:var(--text);font:14px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+  #app{height:100%;display:flex;flex-direction:column;}
+  header{display:flex;align-items:center;justify-content:space-between;padding:10px 18px;gap:14px;border-bottom:1px solid var(--line);}
+  .brand{font-weight:700;letter-spacing:.16em;font-size:15px;}.brand b{color:var(--fill);}
+  .sub{color:var(--muted);font-size:11px;letter-spacing:.05em;}
+  .hud{display:flex;gap:16px;align-items:center;}
+  .stat{text-align:center;min-width:54px;}.stat .n{font-size:17px;font-weight:700;}
+  .stat .l{font-size:9px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;}
+  .stab{display:flex;gap:4px;justify-content:center;}.stab i{width:9px;height:9px;border-radius:3px;background:var(--green);box-shadow:0 0 7px var(--green);}
+  .stab i.gone{background:#2a323d;box-shadow:none;}
+  main{flex:1;position:relative;}
+  #scene{display:block;width:100%;height:100%;cursor:grab;touch-action:none;}
+  #scene:active{cursor:grabbing;}
+  footer{display:flex;align-items:center;gap:10px;padding:8px 16px;border-top:1px solid var(--line);font-size:11px;color:var(--muted);flex-wrap:wrap;}
+  .tool button,.ghost{background:var(--panel);border:1px solid var(--line);color:var(--muted);font:inherit;border-radius:8px;padding:7px 12px;cursor:pointer;}
+  .tool{display:flex;gap:6px;}
+  .tool button.on{color:var(--text);border-color:var(--fill);box-shadow:0 0 0 1px var(--fill) inset;}
+  .tool button.on.voidt{border-color:var(--cyan);box-shadow:0 0 0 1px var(--cyan) inset;}
+  .ghost{color:var(--muted);}
+  #readout{flex:1;min-width:200px;}
+  #readout b{color:var(--fill);}#readout .vd{color:var(--cyan);}
+  .overlay{position:absolute;inset:0;background:rgba(7,10,18,.86);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:20;}
+  .card{background:linear-gradient(180deg,#141d2c,#0e1420);border:1px solid var(--line);border-radius:18px;padding:26px 30px;max-width:460px;width:92%;box-shadow:0 40px 100px -30px #000;}
+  .card h1{margin:0 0 2px;font-size:21px;letter-spacing:.14em;}.card h1 b{color:var(--fill);}
+  .card .tag{color:var(--muted);font-size:12px;margin-bottom:16px;}
+  .card p{color:#cdd6e3;font-size:12.5px;}
+  .goalbar{background:linear-gradient(90deg,rgba(155,124,255,.14),transparent);border-left:3px solid var(--violet);border-radius:6px;padding:9px 12px;margin:2px 0 12px;font-size:12.5px;color:#dbe2ee;}
+  .key{display:inline-block;background:#1b2433;border:1px solid var(--line);border-radius:5px;padding:1px 7px;color:var(--text);}
+  .modes{display:flex;flex-direction:column;gap:8px;margin:16px 0 4px;}
+  .modes button{display:flex;justify-content:space-between;background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:12px 15px;font:inherit;cursor:pointer;text-align:left;}
+  .modes button:hover{border-color:var(--violet);}.modes button .d{color:var(--muted);font-size:11px;}
+  .rate{font-size:50px;font-weight:800;text-align:center;margin:4px 0;}
+  .winstats{display:flex;justify-content:space-around;margin:8px 0;text-align:center;}
+  .winstats .n{font-size:19px;font-weight:700;color:var(--cyan);}.winstats .l{font-size:10px;color:var(--muted);}
+  .row2{display:flex;gap:10px;margin-top:10px;}
+  .row2 button{flex:1;background:var(--fill);color:#241a00;border:0;border-radius:10px;padding:12px;font:inherit;font-weight:700;cursor:pointer;}
+  .row2 button.sec{background:var(--panel);color:var(--text);border:1px solid var(--line);}
+  .hide{display:none!important;}
+  .legend{display:flex;gap:14px;color:var(--muted);font-size:11px;margin:10px 0;flex-wrap:wrap;}
+  .sw{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px;margin-right:4px;}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div><div class="brand">RUMI · <b>COLLAPSE</b></div><div class="sub" id="modeline">collapse the manifold</div></div>
+    <div class="hud">
+      <div class="stat"><div class="n" id="solved">0</div><div class="l">collapsed</div></div>
+      <div class="stat"><div class="n" id="moves">0</div><div class="l">moves</div></div>
+      <div class="stat"><div class="n" id="maxc">0</div><div class="l">best chain</div></div>
+      <div class="stat"><div class="l" style="margin-bottom:5px">stability</div><div class="stab" id="stab"></div></div>
+    </div>
+  </header>
+  <main>
+    <canvas id="scene"></canvas>
+    <!-- TITLE -->
+    <div class="overlay" id="title">
+      <div class="card">
+        <h1>RUMI · <b>COLLAPSE</b> <span style="color:var(--muted);font-size:13px;letter-spacing:0">the manifold</span></h1>
+        <div class="tag">a deduction puzzle on the surface of a spinning solid</div>
+        <div class="goalbar"><b style="color:var(--violet)">Goal:</b> every cell on the solid is secretly <b style="color:var(--fill)">live</b> or <b style="color:var(--cyan)">void</b>. Deduce them all from the numbers and <b>collapse the whole manifold</b>.</div>
+        <p><b style="color:var(--fill)">The rule:</b> a number = how many cells are <b style="color:var(--fill)">live</b> among <b>itself + its 4 touching neighbours</b> (the plus around it). A <b>0</b> → all 5 void. A <b>5</b> → all 5 live.</p>
+        <p><b style="color:var(--fill)">Play:</b> <span class="key">drag</span> to spin the solid · <span class="key">click</span> a cell to mark it (Fill ◆ / Empty ◇ tools, or left-click = fill, right-click = empty). A correct mark <b style="color:var(--cyan)">cascades</b> across the surface — and ripples around the back where you can't see. Solve it across all six faces.</p>
+        <p style="color:var(--muted);font-size:11.5px"><b style="color:var(--cyan)">Glowing</b> cells have a guaranteed move. <b>Hover</b> a number to read its math. <b>💡 hint</b> spins you to one.</p>
+        <div class="legend">
+          <span><span class="sw" style="background:linear-gradient(160deg,var(--fill),var(--fillglow))"></span>live ◆</span>
+          <span><span class="sw" style="background:#0f1722"></span>void ◇</span>
+          <span><span class="sw" style="background:#26334a"></span>unknown</span>
+        </div>
+        <div class="modes" id="modes"></div>
+      </div>
+    </div>
+    <!-- WIN -->
+    <div class="overlay hide" id="win">
+      <div class="card">
+        <h1>MANIFOLD <b>COLLAPSED</b></h1>
+        <div class="tag" id="winsub"></div>
+        <div class="rate" id="rate">S</div>
+        <div class="winstats">
+          <div><div class="n" id="ws_moves">0</div><div class="l">moves</div></div>
+          <div><div class="n" id="ws_max">0</div><div class="l">best chain</div></div>
+          <div><div class="n" id="ws_stab">3</div><div class="l">stability</div></div>
+        </div>
+        <div class="row2"><button id="againBtn">collapse another</button><button class="sec" id="menuBtn2">menu</button></div>
+      </div>
+    </div>
+  </main>
+  <footer>
+    <div class="tool"><button id="tFill" class="on">◆ Fill</button><button id="tVoid" class="voidt">◇ Empty</button></div>
+    <button class="ghost" id="hintBtn">💡 hint</button>
+    <button class="ghost" id="assistBtn">assist: on</button>
+    <span id="readout">drag to spin · click a <b style="color:var(--cyan)">glowing</b> cell to start the collapse</span>
+    <button class="ghost" id="menuBtn" style="margin-left:auto">menu</button>
+  </footer>
+</div>
+<script>
+"use strict";
+const UNK=0,FILL=1,VOID=2;
+const $=id=>document.getElementById(id);
+const cv=$('scene'); const ctx=cv.getContext('2d');
+
+// ── geometry: a cube subdivided n×n per face, spherified ──────────────────
+const FACES=[
+ {n:[1,0,0],u:[0,0,-1],v:[0,1,0]},{n:[-1,0,0],u:[0,0,1],v:[0,1,0]},
+ {n:[0,1,0],u:[1,0,0],v:[0,0,-1]},{n:[0,-1,0],u:[1,0,0],v:[0,0,1]},
+ {n:[0,0,1],u:[1,0,0],v:[0,1,0]},{n:[0,0,-1],u:[-1,0,0],v:[0,1,0]},
+];
+const add=(a,b,s)=>[a[0]+b[0]*s,a[1]+b[1]*s,a[2]+b[2]*s];
+const cubePt=(F,a,b)=>[F.n[0]+F.u[0]*a+F.v[0]*b, F.n[1]+F.u[1]*a+F.v[1]*b, F.n[2]+F.u[2]*a+F.v[2]*b];
+const norm=p=>{const m=Math.hypot(p[0],p[1],p[2])||1;return [p[0]/m,p[1]/m,p[2]/m];};
+const R=1.45;
+let GRID=3, cells=[], adj=[];
+function buildSolid(n){
+  GRID=n; cells=[];
+  const midMap=new Map();
+  for(let fi=0;fi<6;fi++){const F=FACES[fi];
+    for(let r=0;r<n;r++)for(let c=0;c<n;c++){
+      const a=(2*c+1)/n-1, b=(2*r+1)/n-1, h=1/n;
+      const cubeC=cubePt(F,a,b);
+      const corners=[[a-h,b-h],[a+h,b-h],[a+h,b+h],[a-h,b+h]].map(([x,y])=>norm(cubePt(F,x,y)).map(z=>z*R));
+      const ctr=norm(cubeC).map(z=>z*R);
+      const nrm=norm(cubeC);
+      const mids=[[a,b-h],[a+h,b],[a,b+h],[a-h,b]].map(([x,y])=>cubePt(F,x,y)); // 4 edge mids (cube coords)
+      const idx=cells.length;
+      cells.push({fi,r,c,ctr,corners,nrm,mids});
+      for(const m of mids){const k=m.map(z=>Math.round(z*1000)/1000).join(',');
+        if(!midMap.has(k))midMap.set(k,[]);midMap.get(k).push(idx);}
+    }
+  }
+  // adjacency: cells sharing an edge-midpoint are neighbours (uniform across faces)
+  adj=cells.map(()=>new Set());
+  for(const arr of midMap.values()) if(arr.length===2){adj[arr[0]].add(arr[1]);adj[arr[1]].add(arr[0]);}
+  adj=adj.map(s=>[...s]);
+}
+const plus=i=>[i,...adj[i]];
+
+// ── puzzle generation (no-guess, plus-Mosaic on the closed surface) ──────
+let sol=[],clue=[],state=[];
+function propSolves(cl){
+  const st=cells.map(()=>UNK); let ch=true,g=0;
+  while(ch&&g++<4000){ch=false;
+    for(let i=0;i<cells.length;i++){if(cl[i]==null)continue;const P=plus(i);let f=0,u=0;
+      for(const j of P){if(st[j]===FILL)f++;else if(st[j]===UNK)u++;}
+      if(f>cl[i]||f+u<cl[i])return null;
+      if(f===cl[i]&&u){for(const j of P)if(st[j]===UNK){st[j]=VOID;ch=true;}}
+      else if(f+u===cl[i]&&u){for(const j of P)if(st[j]===UNK){st[j]=FILL;ch=true;}}
+    }}
+  for(let i=0;i<cells.length;i++)if(st[i]===UNK)return null;
+  return st;
+}
+function generate(n,keepProb){
+  buildSolid(n);
+  for(let tries=0;tries<40;tries++){
+    sol=cells.map(()=>Math.random()<0.5);
+    // carve a 0-clue opening: one cell + its plus all void
+    const seed=(Math.random()*cells.length)|0; for(const j of plus(seed))sol[j]=false;
+    const full=cells.map((_,i)=>plus(i).filter(j=>sol[j]).length);
+    const order=cells.map((_,i)=>i).sort(()=>Math.random()-0.5);
+    let kept=cells.map((_,i)=>Math.random()<keepProb?full[i]:null);
+    kept[seed]=0;
+    const okk=()=>{const st=propSolves(kept);if(!st)return false;for(let i=0;i<cells.length;i++)if((st[i]===FILL)!==sol[i])return false;return true;};
+    let ci=0; while(!okk()&&ci<order.length){if(kept[order[ci]]==null)kept[order[ci]]=full[order[ci]];ci++;}
+    if(okk()){clue=kept;return true;}
+  }
+  clue=cells.map((_,i)=>plus(i).filter(j=>sol[j]).length); return true; // fallback: full clues
+}
+
+// ── game state ───────────────────────────────────────────────────────────
+let moves=0,maxc=0,stability=3,tool=FILL,won=false,solving=false,assist=true,firstCascade=false,curMode={};
+let yaw=0.7,pitch=-0.45,drag=false,lx=0,ly=0,moved=0,autoIdle=0,winFlash=0;
+let hoverCell=-1, pops=new Map();
+function newGame(diff){
+  const cfg={learn:{n:2,k:.85},easy:{n:3,k:.74},medium:{n:4,k:.64},hard:{n:5,k:.55}}[diff];
+  generate(cfg.n,cfg.k);
+  state=cells.map(()=>UNK); moves=0;maxc=0;stability=3;won=false;solving=false;firstCascade=false;pops.clear();
+  yaw=0.7;pitch=-0.45;autoIdle=0;winFlash=0; curMode={diff};
+  $('title').classList.add('hide');$('win').classList.add('hide');
+  $('modeline').textContent=diff+' · spherified cube · '+(cfg.n)+'×'+(cfg.n)+'×6 = '+cells.length+' cells';
+  $('readout').innerHTML='drag to spin · click a <b style="color:var(--cyan)">glowing</b> cell to start the collapse';
+  resize();updateHud();
+}
+
+// ── 3D math ──────────────────────────────────────────────────────────────
+let W,H,CX,CY,SCALE,DPR;
+function resize(){DPR=Math.min(window.devicePixelRatio||1,2);const b=cv.getBoundingClientRect();
+  W=Math.max(320, Math.round(b.width)||cv.clientWidth||window.innerWidth||800);
+  H=Math.max(300, Math.round(b.height)||cv.clientHeight||((window.innerHeight||720)-112));
+  cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);
+  CX=W/2;CY=H/2;SCALE=Math.min(W,H)*0.42;}
+function rotp(p){const cy=Math.cos(yaw),sy=Math.sin(yaw),cx=Math.cos(pitch),sx=Math.sin(pitch);
+  let x=p[0]*cy+p[2]*sy, z=-p[0]*sy+p[2]*cy, y=p[1];
+  return [x, y*cx-z*sx, y*sx+z*cx];}
+function proj(p){const r=rotp(p);const D=4.4;const s=SCALE/(D-r[2]);return {x:CX+r[0]*s,y:CY-r[1]*s,z:r[2]};}
+
+// ── render ───────────────────────────────────────────────────────────────
+const FACECOL=[[90,150,255],[255,150,90],[120,235,160],[235,120,200],[150,120,255],[120,210,235]];
+function render(){
+  requestAnimationFrame(render);
+  if(!cells.length){return;}
+  if(W<10||H<10){resize();if(W<10)return;}
+  if(!drag&&!won){autoIdle++;if(autoIdle>120)yaw+=0.0025;}
+  if(won){yaw+=0.006;winFlash=Math.min(1,winFlash+0.015);}
+  ctx.clearRect(0,0,W,H);
+  // glow core behind
+  const o=proj([0,0,0]);
+  let prog=0;for(let i=0;i<cells.length;i++)if(state[i]!==UNK)prog++;prog/=cells.length;
+  ctx.save();ctx.globalCompositeOperation='lighter';
+  const Rc=SCALE*(0.5+0.5*prog)*(1+winFlash*0.3);const g=ctx.createRadialGradient(o.x,o.y,0,o.x,o.y,Rc);
+  g.addColorStop(0,`rgba(155,124,255,${0.05+0.18*prog+0.2*winFlash})`);g.addColorStop(1,'rgba(155,124,255,0)');
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(o.x,o.y,Rc,0,7);ctx.fill();ctx.restore();
+
+  // visible cells (back-face cull by rotated normal), sorted far→near
+  const vis=[];
+  for(let i=0;i<cells.length;i++){const nz=rotp(cells[i].nrm)[2];if(nz<=0.04)continue;
+    vis.push({i,z:rotp(cells[i].ctr)[2],nz});}
+  vis.sort((a,b)=>a.z-b.z);
+  const now=performance.now();
+  for(const {i,nz} of vis){drawCell(i,nz,now);}
+  ctx.restore&&ctx.restore();
+}
+function drawCell(i,nz,now){
+  const cell=cells[i],st=state[i];
+  const pts=cell.corners.map(proj);
+  const shade=0.45+0.55*nz;
+  const fc=FACECOL[cell.fi];
+  ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);for(let k=1;k<4;k++)ctx.lineTo(pts[k].x,pts[k].y);ctx.closePath();
+  let pop=0;if(pops.has(i)){pop=Math.max(0,1-(now-pops.get(i))/450);if(pop<=0)pops.delete(i);}
+  if(st===FILL){ctx.fillStyle=`rgba(${255},${198+30*pop|0},${102},${(0.78+0.2*pop)*shade+0.15})`;}
+  else if(st===VOID){ctx.fillStyle=`rgba(14,22,34,${0.55+0.35*nz})`;}
+  else {ctx.fillStyle=`rgba(${fc[0]*0.5|0},${fc[1]*0.5|0},${fc[2]*0.5|0},${0.10+0.16*nz})`;}
+  ctx.fill();
+  // border / glow
+  const forced=assist&&!won&&isForced(i);
+  ctx.lineWidth= forced?2.2:1;
+  ctx.strokeStyle= i===hoverCell?'#fff':(forced?`rgba(76,201,240,${0.55+0.45*Math.sin(now/300)*0.5+0.3})`:(st===FILL?'rgba(255,227,154,.8)':`rgba(120,150,190,${0.18+0.3*nz})`));
+  ctx.stroke();
+  if(pop>0){ctx.save();ctx.globalCompositeOperation='lighter';ctx.strokeStyle=`rgba(76,201,240,${pop})`;ctx.lineWidth=2.5;ctx.stroke();ctx.restore();}
+  // marker / clue
+  const ctP=proj(cell.ctr);const fs=Math.max(8,SCALE*0.10*(0.6+0.5*nz));
+  ctx.font='700 '+fs.toFixed(0)+"px ui-monospace,monospace";ctx.textAlign='center';ctx.textBaseline='middle';
+  if(clue[i]!=null){ctx.fillStyle=st===FILL?'rgba(60,40,0,.92)':`rgba(200,214,230,${0.5+0.5*nz})`;ctx.fillText(clue[i],ctP.x,ctP.y);}
+  else if(st===VOID){ctx.fillStyle=`rgba(92,113,133,${0.6+0.4*nz})`;ctx.fillText('◇',ctP.x,ctP.y);}
+  else if(st===FILL){ctx.fillStyle='rgba(60,40,0,.85)';ctx.fillText('◆',ctP.x,ctP.y);}
+}
+function isForced(i){if(clue[i]==null)return false;const P=plus(i);let f=0,u=0;for(const j of P){if(state[j]===FILL)f++;else if(state[j]===UNK)u++;}return u>0&&(f===clue[i]||f+u===clue[i]);}
+
+// ── cascade ──────────────────────────────────────────────────────────────
+function floodFrom(seed,cap){
+  const waves=[];let total=0;let frontier=[seed];
+  while(frontier.length&&total<cap){
+    const watch=new Set();
+    for(const f of frontier){if(clue[f]!=null)watch.add(f);for(const nb of adj[f])if(clue[nb]!=null)watch.add(nb);}
+    const cand=[];const seen=new Set();
+    for(const ci of watch){const P=plus(ci);let f=0;const unk=[];
+      for(const j of P){if(state[j]===FILL)f++;else if(state[j]===UNK)unk.push(j);}
+      if(!unk.length)continue;const v=f===clue[ci]?VOID:(f+unk.length===clue[ci]?FILL:0);if(!v)continue;
+      for(const j of unk){if(seen.has(j))continue;seen.add(j);cand.push([j,v]);}}
+    if(!cand.length)break;
+    const room=cap-total;const apply=room>=cand.length?cand:cand.slice(0,room);
+    for(const [j,v]of apply){state[j]=v;}
+    total+=apply.length;waves.push(apply);
+    if(apply.length<cand.length)break;
+    frontier=apply.map(([j])=>j);
+  }
+  return waves;
+}
+function attempt(i,want){
+  if(state[i]!==UNK){$('readout').textContent='That cell is already collapsed — find an unsolved one.';return;}
+  const correct=sol[i]?FILL:VOID;
+  if(want!==correct){stability=Math.max(0,stability-1);blip(140,.08,'sawtooth');updateHud();
+    $('readout').innerHTML='✗ wrong — that cell isn\'t '+(want===FILL?'live':'void')+'. Re-check the numbers around it. <span style="color:var(--red)">−1 stability</span>';return;}
+  solving=true;moves++;state[i]=correct;pops.set(i,performance.now());blip(correct===FILL?440:330,.05);
+  const waves=floodFrom(i,12);
+  let total=1,combo=0;
+  const step=()=>{
+    if(!waves.length){finishCascade(total);return;}
+    const w=waves.shift();const t0=performance.now();w.forEach(([j],k)=>{setTimeout(()=>pops.set(j,performance.now()),k*22);});
+    combo+=w.length;total+=w.length;if(combo>=3)showReadCombo(combo);
+    blip(360+Math.min(combo,28)*26,.04,'triangle');
+    setTimeout(step,Math.max(70,150-combo*4));
+  };
+  step();
+}
+function finishCascade(total){
+  const chain=total-1;if(chain>maxc)maxc=chain;
+  if(chain>=8){flashWin();}
+  if(chain>=2&&!firstCascade){firstCascade=true;$('readout').innerHTML='⚡ <b style="color:var(--cyan)">Chain reaction!</b> your move satisfied nearby numbers, so they auto-collapsed — even around the back. Spin to see.';}
+  else if(chain>=2){$('readout').innerHTML='⚡ chain reaction — <b>'+chain+'</b> cells collapsed.';}
+  updateHud();solving=false;checkWin();
+}
+function showReadCombo(n){$('readout').innerHTML='⚡ collapsing… <b style="color:var(--cyan)">×'+n+'</b>';}
+function flashWin(){winFlash=Math.min(1,winFlash+0.4);}
+function checkWin(){for(let i=0;i<cells.length;i++)if(state[i]===UNK)return;won=true;setTimeout(showWin,650);}
+
+// ── interaction ──────────────────────────────────────────────────────────
+function pickCell(mx,my){
+  let best=-1,bz=-1e9;
+  for(let i=0;i<cells.length;i++){if(rotp(cells[i].nrm)[2]<=0.04)continue;
+    const pts=cells[i].corners.map(proj);if(inPoly(mx,my,pts)){const z=rotp(cells[i].ctr)[2];if(z>bz){bz=z;best=i;}}}
+  return best;
+}
+function inPoly(x,y,p){let inside=false;for(let i=0,j=p.length-1;i<p.length;j=i++){
+  if(((p[i].y>y)!==(p[j].y>y))&&(x<(p[j].x-p[i].x)*(y-p[i].y)/(p[j].y-p[i].y)+p[i].x))inside=!inside;}return inside;}
+function evXY(e){const r=cv.getBoundingClientRect();const t=e.touches?e.touches[0]:e;return [t.clientX-r.left,t.clientY-r.top];}
+cv.addEventListener('contextmenu',e=>e.preventDefault());
+function down(e){const [x,y]=evXY(e);drag=true;moved=0;lx=x;ly=y;autoIdle=0;}
+function move(e){const [x,y]=evXY(e);
+  if(drag){const dx=x-lx,dy=y-ly;moved+=Math.abs(dx)+Math.abs(dy);yaw+=dx*0.008;pitch+=dy*0.008;pitch=Math.max(-1.45,Math.min(1.45,pitch));lx=x;ly=y;autoIdle=0;}
+  else if(!won&&!solving){const c=pickCell(x,y);if(c!==hoverCell){hoverCell=c;showReadout(c);}}
+}
+function up(e){const wasClick=moved<6;drag=false;autoIdle=0;
+  if(wasClick&&!won&&!solving){const [x,y]=evXY(e);const c=pickCell(x,y);if(c>=0){
+    const want=(e.button===2)?VOID:tool;attempt(c,want);}}}
+cv.addEventListener('mousedown',down);window.addEventListener('mousemove',move);window.addEventListener('mouseup',up);
+cv.addEventListener('mouseup',e=>{});
+cv.addEventListener('touchstart',e=>down(e),{passive:true});
+cv.addEventListener('touchmove',e=>{move(e);},{passive:true});
+cv.addEventListener('touchend',e=>{const wasClick=moved<6;drag=false;if(wasClick&&!won&&!solving){const c=pickCell(lx,ly);if(c>=0)attempt(c,tool);}},{passive:true});
+
+function showReadout(i){
+  if(i<0||clue[i]==null){if(!solving)$('readout').textContent='click a glowing cell, or spin to explore the back';return;}
+  const P=plus(i);let f=0,u=0;for(const j of P){if(state[j]===FILL)f++;else if(state[j]===UNK)u++;}
+  const need=clue[i]-f;let m=`<b>${clue[i]}</b> live among this cell + its ${adj[i].length} neighbours · found <b>${f}</b> · ${u} unknown · need <b>${need}</b> more`;
+  if(u>0&&need===0)m+=` <span class="vd">→ the ${u} unknown are EMPTY</span>`;
+  else if(u>0&&need===u)m+=` <span style="color:var(--fill)">→ the ${u} unknown are FILLED</span>`;
+  $('readout').innerHTML=m;
+}
+function hint(){
+  // find a forced clue, spin toward it, flash it
+  let target=-1;for(let i=0;i<cells.length;i++)if(isForced(i)){target=i;break;}
+  if(target<0){$('readout').textContent='No surface move — compare two overlapping numbers.';return;}
+  const nrm=cells[target].nrm;yaw=Math.atan2(nrm[0],nrm[2]);pitch=-Math.asin(Math.max(-1,Math.min(1,nrm[1])));autoIdle=-200;
+  pops.set(target,performance.now());for(const j of adj[target])if(state[j]===UNK)pops.set(j,performance.now());
+  const P=plus(target);let f=0;const unk=P.filter(j=>state[j]===UNK);
+  for(const j of P)if(state[j]===FILL)f++;
+  const v=f===clue[target]?'EMPTY':'FILLED';
+  $('readout').innerHTML=`Spun to a <b>${clue[target]}</b> on the front. Its ${unk.length} unknown ${unk.length>1?'cells are':'cell is'} <b style="color:${v==='EMPTY'?'var(--cyan)':'var(--fill)'}">${v}</b>.`;
+  blip(520,.06,'triangle');
+}
+
+// ── audio ────────────────────────────────────────────────────────────────
+let actx;function blip(fq,d,t){try{actx=actx||new(window.AudioContext||window.webkitAudioContext)();
+  const o=actx.createOscillator(),g=actx.createGain();o.type=t||'sine';o.frequency.value=fq;o.connect(g);g.connect(actx.destination);
+  g.gain.setValueAtTime(.0001,actx.currentTime);g.gain.exponentialRampToValueAtTime(.16,actx.currentTime+.01);
+  g.gain.exponentialRampToValueAtTime(.0001,actx.currentTime+(d||.06));o.start();o.stop(actx.currentTime+(d||.06)+.02);}catch(e){}}
+
+// ── hud / win ────────────────────────────────────────────────────────────
+function updateHud(){let s=0;for(let i=0;i<cells.length;i++)if(state[i]!==UNK)s++;
+  $('solved').textContent=s+'/'+cells.length;$('moves').textContent=moves;$('maxc').textContent=maxc;
+  const st=$('stab');st.innerHTML='';for(let k=0;k<3;k++){const x=document.createElement('i');if(k>=stability)x.className='gone';st.appendChild(x);}}
+function showWin(){
+  const eff=moves>0?cells.length/moves:0;let rate='C';
+  if(stability===3&&eff>=6)rate='S';else if(stability>=2&&eff>=4)rate='A';else if(eff>=2.8)rate='B';
+  $('rate').textContent=rate;$('rate').style.color=rate==='S'?'var(--fill)':rate==='A'?'var(--cyan)':rate==='B'?'var(--green)':'var(--muted)';
+  $('ws_moves').textContent=moves;$('ws_max').textContent=maxc;$('ws_stab').textContent=stability;
+  $('winsub').textContent=curMode.diff+' · '+cells.length+' cells collapsed in '+moves+' moves';
+  $('win').classList.remove('hide');blip(660,.12,'triangle');setTimeout(()=>blip(880,.18,'triangle'),130);
+}
+
+// ── menu / wiring ────────────────────────────────────────────────────────
+$('tFill').onclick=()=>{tool=FILL;$('tFill').classList.add('on');$('tVoid').classList.remove('on');};
+$('tVoid').onclick=()=>{tool=VOID;$('tVoid').classList.add('on');$('tFill').classList.remove('on');};
+$('hintBtn').onclick=()=>{if(!won&&!solving)hint();};
+$('assistBtn').onclick=()=>{assist=!assist;$('assistBtn').textContent='assist: '+(assist?'on':'off');};
+$('menuBtn').onclick=()=>{$('resumeWrap')&&0;buildMenu(true);$('title').classList.remove('hide');};
+$('menuBtn2').onclick=()=>{buildMenu(false);$('win').classList.add('hide');$('title').classList.remove('hide');};
+$('againBtn').onclick=()=>newGame(curMode.diff||'easy');
+window.addEventListener('keydown',e=>{if(e.key==='Escape'&&cells.length&&!won&&!$('title').classList.contains('hide'))$('title').classList.add('hide');});
+window.addEventListener('resize',()=>{if(cells.length)resize();});
+function buildMenu(resumable){
+  const m=$('modes');m.innerHTML='';
+  if(resumable&&cells.length&&!won){const b=document.createElement('button');b.style.borderColor='var(--cyan)';
+    b.innerHTML='<span style="color:var(--cyan)">↩ resume current</span><span class="d">back to your solid</span>';
+    b.onclick=()=>$('title').classList.add('hide');m.appendChild(b);}
+  for(const [d,name,desc] of [['learn','Learn · 2×2×6','24 cells — feel the surface'],['easy','Easy · 3×3×6','54 cells'],['medium','Medium · 4×4×6','96 cells'],['hard','Hard · 5×5×6','150 cells, long chains']]){
+    const b=document.createElement('button');b.innerHTML=`<span>${name}</span><span class="d">${desc}</span>`;
+    b.onclick=()=>{if(!actx)blip(1,.001);newGame(d);};m.appendChild(b);}
+}
+buildMenu(false);resize();render();
+</script>
+</body>
+</html>
