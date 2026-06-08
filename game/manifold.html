@@ -33,6 +33,9 @@
   #readout{flex:1;min-width:200px;}
   #readout b{color:var(--fill);}#readout .vd{color:var(--cyan);}
   .overlay{position:fixed;inset:0;background:rgba(7,10,18,.92);backdrop-filter:blur(3px);display:flex;overflow-y:auto;padding:16px;z-index:30;}
+  /* win overlay: don't cover the solved solid — transparent, card at bottom, drags pass through */
+  #win{background:linear-gradient(180deg,transparent 55%,rgba(7,10,18,.55));backdrop-filter:none;pointer-events:none;}
+  #win .card{margin:auto auto 22px;max-width:430px;pointer-events:auto;background:linear-gradient(180deg,rgba(20,29,44,.97),rgba(14,20,32,.97));}
   .card{background:linear-gradient(180deg,#141d2c,#0e1420);border:1px solid var(--line);border-radius:18px;padding:26px 30px;max-width:460px;width:100%;box-shadow:0 40px 100px -30px #000;margin:auto;}
   .card h1{margin:0 0 2px;font-size:21px;letter-spacing:.14em;}.card h1 b{color:var(--fill);}
   .card .tag{color:var(--muted);font-size:12px;margin-bottom:16px;}
@@ -179,7 +182,7 @@ function generate(n,keepProb){
 }
 
 // ── game state ───────────────────────────────────────────────────────────
-let moves=0,maxc=0,stability=3,tool=FILL,won=false,solving=false,assist=true,firstCascade=false,curMode={};
+let moves=0,maxc=0,stability=3,tool=FILL,won=false,solving=false,assist=true,firstCascade=false,curMode={},solveTime=0,revealT=0;
 let yaw=0.7,pitch=-0.45,drag=false,lx=0,ly=0,moved=0,autoIdle=0,winFlash=0;
 let hoverCell=-1, pops=new Map();
 function newGame(diff){
@@ -195,11 +198,14 @@ function newGame(diff){
 
 // ── 3D math ──────────────────────────────────────────────────────────────
 let W,H,CX,CY,SCALE,DPR;
-function resize(){DPR=Math.min(window.devicePixelRatio||1,2);const b=cv.getBoundingClientRect();
-  W=Math.max(320, Math.round(b.width)||cv.clientWidth||window.innerWidth||800);
-  H=Math.max(300, Math.round(b.height)||cv.clientHeight||((window.innerHeight||720)-112));
+function resize(){DPR=Math.min(window.devicePixelRatio||1,2);
+  const hh=(document.querySelector('header')||{}).offsetHeight||56;
+  const fh=(document.querySelector('footer')||{}).offsetHeight||44;
+  W=Math.max(320, window.innerWidth||document.documentElement.clientWidth||800);
+  H=Math.max(300, (window.innerHeight||document.documentElement.clientHeight||720)-hh-fh);
+  cv.style.width=W+'px';cv.style.height=H+'px';
   cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);
-  CX=W/2;CY=H/2;SCALE=Math.min(W,H)*0.42;}
+  CX=W/2;CY=H*0.47;SCALE=Math.min(W,H)*0.48;}
 function rotp(p){const cy=Math.cos(yaw),sy=Math.sin(yaw),cx=Math.cos(pitch),sx=Math.sin(pitch);
   let x=p[0]*cy+p[2]*sy, z=-p[0]*sy+p[2]*cy, y=p[1];
   return [x, y*cx-z*sx, y*sx+z*cx];}
@@ -212,7 +218,7 @@ function render(){
   if(!cells.length){return;}
   if(W<10||H<10){resize();if(W<10)return;}
   if(!drag&&!won){autoIdle++;if(autoIdle>120)yaw+=0.0025;}
-  if(won){yaw+=0.006;winFlash=Math.min(1,winFlash+0.015);}
+  if(won){yaw+=0.006;winFlash=Math.min(1,winFlash+0.015);revealT=Math.min(1,(performance.now()-solveTime)/1800);}else revealT=0;
   ctx.clearRect(0,0,W,H);
   // glow core behind
   const o=proj([0,0,0]);
@@ -250,8 +256,14 @@ function drawCell(i,nz,now){
   if(pop>0){ctx.save();ctx.globalCompositeOperation='lighter';ctx.strokeStyle=`rgba(76,201,240,${pop})`;ctx.lineWidth=2.5;ctx.stroke();ctx.restore();}
   // marker / clue
   const ctP=proj(cell.ctr);const fs=Math.max(8,SCALE*0.10*(0.6+0.5*nz));
+  if(won&&st===FILL&&revealT>0){ctx.save();ctx.globalCompositeOperation='lighter';
+    const rr=SCALE*(0.05+0.035*revealT)*(1+0.45*Math.sin(now/220+i));
+    const gg=ctx.createRadialGradient(ctP.x,ctP.y,0,ctP.x,ctP.y,rr);
+    gg.addColorStop(0,`rgba(255,212,110,${0.6*revealT})`);gg.addColorStop(1,'rgba(255,212,110,0)');
+    ctx.fillStyle=gg;ctx.beginPath();ctx.arc(ctP.x,ctP.y,rr,0,7);ctx.fill();ctx.restore();}
   ctx.font='700 '+fs.toFixed(0)+"px ui-monospace,monospace";ctx.textAlign='center';ctx.textBaseline='middle';
-  if(clue[i]!=null){ctx.fillStyle=st===FILL?'rgba(60,40,0,.92)':`rgba(200,214,230,${0.5+0.5*nz})`;ctx.fillText(clue[i],ctP.x,ctP.y);}
+  const na=won?Math.max(0,1-revealT*0.92):1;
+  if(clue[i]!=null){ctx.globalAlpha=na;ctx.fillStyle=st===FILL?'rgba(60,40,0,.92)':`rgba(200,214,230,${0.5+0.5*nz})`;ctx.fillText(clue[i],ctP.x,ctP.y);ctx.globalAlpha=1;}
   else if(st===VOID){ctx.fillStyle=`rgba(92,113,133,${0.6+0.4*nz})`;ctx.fillText('◇',ctP.x,ctP.y);}
   else if(st===FILL){ctx.fillStyle='rgba(60,40,0,.85)';ctx.fillText('◆',ctP.x,ctP.y);}
 }
@@ -303,7 +315,14 @@ function finishCascade(total){
 }
 function showReadCombo(n){$('readout').innerHTML='⚡ collapsing… <b style="color:var(--cyan)">×'+n+'</b>';}
 function flashWin(){winFlash=Math.min(1,winFlash+0.4);}
-function checkWin(){for(let i=0;i<cells.length;i++)if(state[i]===UNK)return;won=true;setTimeout(showWin,650);}
+function checkWin(){for(let i=0;i<cells.length;i++)if(state[i]===UNK)return;triggerWin();}
+function triggerWin(){won=true;solveTime=performance.now();
+  // loop-closing sweep: flare the live cells in angular order so light sweeps around
+  const live=[];for(let i=0;i<cells.length;i++)if(state[i]===FILL)live.push(i);
+  live.sort((a,b)=>Math.atan2(cells[a].ctr[1],cells[a].ctr[2])-Math.atan2(cells[b].ctr[1],cells[b].ctr[2]));
+  live.forEach((i,k)=>setTimeout(()=>{pops.set(i,performance.now());if(k%3===0)blip(440+(k%14)*36,.035,'triangle');},k*38));
+  blip(660,.14,'triangle');setTimeout(()=>blip(880,.2,'triangle'),150);
+  setTimeout(showWin,Math.min(3200,1000+live.length*38));}
 
 // ── interaction ──────────────────────────────────────────────────────────
 function pickCell(mx,my){
